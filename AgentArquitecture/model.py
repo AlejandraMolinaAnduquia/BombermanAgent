@@ -1,20 +1,28 @@
+import mesa
 from mesa import Model
 from mesa.time import RandomActivation
 from mesa.space import MultiGrid
 from mesa.datacollection import DataCollector
 from Controllers.fileLoad import FileLoad
 from agent import BomberManAgent
+from mesa.datacollection import DataCollector
 
 class BomberManModel(Model):
          
-    def __init__(self,num_agents, width,height):
-        self.number_agents=num_agents # Numero de agentes inicial
-        self.grid=MultiGrid(width,height,False) #Parametro Falso para que no se salga de la grilla
+    def __init__(self, n, width,height):
+        self.number_agents= n # Numero de agentes inicial
+        self.grid=MultiGrid(width,height,True) #Parametro Falso para que no se salga de la grilla
         self.schedule=RandomActivation(self) # Planeador
         self.running=True
         self.matrizArchivo=self.leerArchivo()
         self.matriz, self.contadorId=self.crearMatrizAgentes(self.matrizArchivo)
-        self.ubicarAgentes(self.matriz)
+        #self.ubicarAgentes(self.matriz)
+        self.datacollector = mesa.DataCollector( #Agentes con y sin poder
+            model_reporters = {
+                "Wealthy Agents": self.current_wealthy_agents,
+                "Non Wealthy Agents": self.current_non_wealthy_agents,
+            }
+        )
         
         for i in range(self.number_agents):
             newAgent = BomberManAgent(i, self)
@@ -25,7 +33,17 @@ class BomberManModel(Model):
 
     def step(self) -> None:
         self.schedule.step()
+        #Permite actualizar los datos cada paso
+        self.datacollector.collect(self) #Llamar metodo para recolectra datos de cada iteración
+        if BomberManModel.current_non_wealthy_agents(self)>20:
+            self.running=False
         
+    def current_wealthy_agents(model) -> int:
+        return sum([1 for agent in model.schedule.agents if agent.wealth>0]) #Contar agentes con poder
+        
+    def current_wealthy_agents(model) -> int:
+        return sum([1 for agent in model.schedule.agents if agent.wealth==0]) #Contar agentes sin poder
+       
     def leerArchivo(self):
         fileLoad = FileLoad()
         matrizArchivo = fileLoad.cargar_matriz_archivo("mapa1.txt")
