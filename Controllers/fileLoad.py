@@ -1,4 +1,7 @@
-class FileLoad:      
+class FileLoad:   
+    def __init__(self) -> None:
+        pass   
+    
     def cargar_matriz_archivo(self,nombre_archivo):
         matriz = []
 

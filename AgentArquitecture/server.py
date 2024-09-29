@@ -1,6 +1,7 @@
 import mesa
+import os
 from mesa.visualization.ModularVisualization import ModularServer
-from model import BomberManModel
+from AgentArquitecture.model import BomberManModel
 from mesa.visualization.modules import CanvasGrid
 from Controllers.fileLoad import FileLoad
 
@@ -15,7 +16,8 @@ simulation_params={
 }
 
 fileLoad = FileLoad()
-matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa1.txt")
+base_dir = os.path.dirname(__file__)  # Obtiene la ruta de la carpeta de model.py
+matrizArchivo = os.path.join(base_dir, "../Data/Maps/mapa1.txt")
 num_row_width=len(matrizArchivo[0])
 num_row_height=len(matrizArchivo)
 
