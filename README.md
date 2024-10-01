@@ -4,7 +4,8 @@ Para el presente proyecto el personaje será un agente inteligente el cual debe 
 Empieza el proyecto:
 
 1. Entorno virtualizado:
-- Te paras en la carpeta donde vas a desarrollar tu poryecto
+- Te paras en la carpeta donde vas a desarrollar tu proyecto
+
 - Ejecutas:
     python -m venv venv
     .\venv\Scripts\activate

@@ -1,26 +1,132 @@
-from mesa import Agent
+import os
+import sys
 
-class BomberManAgent(Agent):
-    
-    def __init__(self, unique_id, model):
-        super().__init__(unique_id, model) # Polimorfismo de escritura (Sobreescribiendo el metodo del padre)
-        self.wealth = 1
-    
-    def step(self) -> None:
-        self.move()
-        if self.wealth>0:
-            self.give_movey()
-    
-    def give_money(self):
-        cellmates = self.model.grid.get_cell_list_contents([self.pos])
-        if len(cellmates)>1:
-            other=self.random.choice(cellmates)
-            other.wealth+=1
-            self.wealth-=1
+# Agregar el directorio raíz del proyecto al PYTHONPATH
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from mesa import Agent
+import random
+
+class Comodin(Agent):
+    def __init__(self, pos, model):
+        super().__init__(pos, model)
+        self.pos = pos
+
+    def step(self):
+        pass  # El comodín no hace nada en cada paso
+
+
+class Bomberman(Agent):
+    def __init__(self, unique_id, model, poder_destruccion):
+        super().__init__(unique_id, model)
+        self.poder_destruccion = poder_destruccion
+        self.bomba_activa = False
+
+    def mover(self):
+        possible_steps = self.model.grid.get_neighborhood(self.pos, moore=False, include_center=False)
+        # Filtrar las celdas vacías y las celdas de comodines
+        empty_cells = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell) or 
+                    isinstance(self.model.grid.get_cell_list_contents([cell])[0], Comodin)]
+        
+        if len(empty_cells) > 0:
+            new_position = self.random.choice(empty_cells)
+            self.model.grid.move_agent(self, new_position)
+            print(f"Bomberman se movió a {self.pos}")
+
+
+    def colocar_bomba(self):
+        if not self.bomba_activa:
+            bomba = Bomba(self.pos, self.model, self.poder_destruccion, self)
+            self.model.grid.place_agent(bomba, self.pos)
+            self.model.schedule.add(bomba)
+            self.bomba_activa = True
+            print(f"Bomba colocada en {self.pos} con timer {bomba.timer}")
+        else:
+            print("No se puede colocar otra bomba hasta que la actual explote.")
+
+    def recoger_comodin(self):
+        # Verificar solo la celda actual del Bomberman
+        celda_actual = self.model.grid.get_cell_list_contents([self.pos])
+        for obj in celda_actual:
+            if isinstance(obj, Comodin):  # Verifica si hay un comodín en la celda actual
+                self.poder_destruccion += 1
+                self.model.grid.remove_agent(obj)  # Elimina el comodín una vez recogido
+                self.model.schedule.remove(obj)  # Elimina el comodín del schedule
+                print(f"Bomberman ha recogido un comodín. Poder de destrucción incrementado a {self.poder_destruccion}.")
+                break
+
             
-    def move(self) -> None:
-        possible_steps = self.model.grid.get_neighborhood(
-            self.pos,moore=False, include_center = False
-        )
-        new_position = self.random.choice(possible_steps)
-        self.model.grid.move_agent(self, new_position)
+    def step(self):
+        self.mover()
+        if random.random() < 0.1:
+            self.colocar_bomba()
+        self.recoger_comodin()
+
+
+class Bomba(Agent):
+    def __init__(self, pos, model, poder_destruccion, bomberman):
+        super().__init__(pos, model)
+        self.pos = pos
+        self.timer = poder_destruccion + 2  # Temporizador de la bomba
+        self.poder_destruccion = poder_destruccion
+        self.bomberman = bomberman  # Referencia al Bomberman que colocó la bomba
+
+    def step(self):
+        self.timer -= 1
+        if self.timer <= 0:
+            print(f"Bomba explotó en {self.pos}")
+            self.explotar()
+            self.model.grid.remove_agent(self)  # Eliminar la bomba del grid
+            self.model.schedule.remove(self)  # Eliminar la bomba del schedule
+            self.bomberman.bomba_activa = False  # Permitir que el Bomberman coloque otra bomba
+
+    def explotar(self):
+        if self.pos is not None:
+            x, y = self.pos  # Obtener la posición de la bomba
+            # Lógica para destruir rocas en las direcciones cardinales
+            for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                for alcance in range(1, self.poder_destruccion + 1):
+                    vecino_x, vecino_y = x + dx * alcance, y + dy * alcance
+                    if self.model.grid.out_of_bounds((vecino_x, vecino_y)):
+                        break  # Salir si la celda está fuera de los límites
+                    vecino = self.model.grid.get_cell_list_contents((vecino_x, vecino_y))
+                    for obj in vecino:
+                        if isinstance(obj, Roca) or isinstance(obj, RocaSalida):
+                            print(f"Roca destruida en ({vecino_x}, {vecino_y})")
+                            self.model.grid.remove_agent(obj)  # Eliminar la roca del grid
+                            # Colocar un comodín si hay disponibles
+                            if self.model.comodines_colocados < self.model.num_comodines:
+                                comodin = Comodin((vecino_x, vecino_y), self.model)
+                                self.model.grid.place_agent(comodin, (vecino_x, vecino_y))
+                                self.model.schedule.add(comodin)
+                                self.model.comodines_colocados += 1
+                                print(f"Comodín colocado en ({vecino_x}, {vecino_y})")
+                            break  # Dejar de comprobar esta dirección después de destruir la roca
+
+
+
+
+
+class Roca(Agent):
+    def __init__(self, pos, model):
+        super().__init__(pos, model)
+        self.pos = pos
+
+    def step(self):
+        pass  # Las rocas no hacen nada en cada paso
+
+class RocaSalida(Agent):
+    def __init__(self, pos, model):
+        super().__init__(pos, model)
+        self.pos = pos
+
+    def step(self):
+        pass  # Similar a Roca, pero esta indica que tiene la salida
+
+class Metal(Agent):
+    def __init__(self, pos, model):
+        super().__init__(pos, model)
+        self.pos = pos
+
+    def step(self):
+        pass  # El metal tampoco hace nada, solo es indestructible

@@ -1,16 +1,20 @@
-class FileLoad:   
-    def __init__(self) -> None:
-        pass   
-    
-    def cargar_matriz_archivo(self,nombre_archivo):
-        matriz = []
 
-        try:
-            with open(nombre_archivo, 'r') as archivo:
-                for linea in archivo:
-                    fila = linea.strip().split(',')
-                    matriz.append(fila)
-        except FileNotFoundError:
-            print(f"Error: El archivo '{nombre_archivo}' no fue encontrado.")
+import os
+import sys
 
-        return matriz
+# Agregar el directorio raíz del proyecto al PYTHONPATH
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+class FileLoader:
+    def __init__(self, filename):
+        self.filename = filename
+
+    def cargar_mapa(self):
+        with open(self.filename, 'r') as file:
+            mapa = [line.strip().split(',') for line in file.readlines()]
+            
+        # Invertir las filas del mapa
+        mapa_invertido = mapa[::-1]
+        
+        return mapa_invertido
+

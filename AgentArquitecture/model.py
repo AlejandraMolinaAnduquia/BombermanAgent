@@ -1,110 +1,90 @@
-import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import mesa
-from mesa import Model
-from mesa.time import RandomActivation
-from mesa.space import MultiGrid
-from mesa.datacollection import DataCollector
-from Controllers.fileLoad import FileLoad
-from AgentArquitecture.agent import BomberManAgent
-from mesa.datacollection import DataCollector
+import random
+import sys
 
-class BomberManModel(Model):
-         
-    def __init__(self, number_of_agents, width,height):
-        self.number_agents = number_of_agents # Numero de agentes inicial
-        self.grid=MultiGrid(width,height,True) #Parametro Falso para que no se salga de la grilla
-        self.schedule=RandomActivation(self) # Planeador
-        self.running=True
-        self.matrizArchivo=self.leerArchivo()
-        self.matriz, self.contadorId = self.crearMatrizAgentes(self.matrizArchivo)
-        #self.ubicarAgentes(self.matriz)
-        self.datacollector = mesa.DataCollector( #Agentes con y sin poder
-            model_reporters = {
-                "Wealthy Agents": self.current_wealthy_agents,
-                "Non Wealthy Agents": self.current_non_wealthy_agents,
-            }
-        )
+# Agregar el directorio raíz del proyecto al PYTHONPATH
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from mesa import Model
+from mesa.space import MultiGrid
+from mesa.time import RandomActivation
+from agent import Bomberman, Roca, RocaSalida, Metal, Bomba, Comodin
+from Controllers.fileLoad import FileLoader
+
+
+import random
+
+class MazeModel(Model):
+    def __init__(self, width, height, num_bombermans, num_comodines, mapa_filename):
+        self.grid = MultiGrid(width, height, True)
+        self.schedule = RandomActivation(self)
+        self.next_id = 0  # Inicializar el contador de IDs
+
+        # Cargar el mapa desde el archivo
+        file_loader = FileLoader(mapa_filename)
+        self.mapa = file_loader.cargar_mapa()  # Inicializar el mapa aquí
+
+        # Contar el número de rocas después de que el mapa haya sido cargado
+        self.num_comodines = min(num_comodines, self.contar_rocas())  # Limitar la cantidad de comodines al número de rocas
+        self.comodines_colocados = 0  # Contador de comodines colocados
+
+        # Inicializar el mapa
+        self.inicializar_mapa()
+
+        # Crear Bombermans
+        for i in range(num_bombermans):
+            poder_destruccion_inicial = 1
+            bomberman = Bomberman(i, self, poder_destruccion_inicial)
+            self.schedule.add(bomberman)
+
+            # Posicionar Bomberman en el lugar especificado por "C_b"
+            for y, row in enumerate(self.mapa):
+                for x, cell in enumerate(row):
+                    if cell == 'C_b':
+                        self.grid.place_agent(bomberman, (x, y))
+                        break
+
+                    
+
+    def contar_rocas(self):
+        # Contar cuántas rocas hay en el mapa
+        total_rocas = 0
+        for y, row in enumerate(self.mapa):
+            for cell in row:
+                if cell == 'R' or cell == 'R_s':  # Contar rocas y rocas con salida
+                    total_rocas += 1
+        return total_rocas
+
+    def inicializar_mapa(self):
+        # Recorre el mapa y coloca los objetos en la grilla
+        for y, row in enumerate(self.mapa):
+            for x, cell in enumerate(row):
+                if cell == 'C':
+                    # Un camino "C"
+                    pass  # No se necesita acción, ya que las celdas vacías se manejan automáticamente
+                elif cell == 'R':
+                    # Crear una roca "R"
+                    roca = Roca((x, y), self)
+                    self.grid.place_agent(roca, (x, y))
+                elif cell == 'R_s':
+                    # Crear una roca con salida "R_s"
+                    roca_salida = RocaSalida((x, y), self)
+                    self.grid.place_agent(roca_salida, (x, y))
+                elif cell == 'M':
+                    # Crear un metal "M"
+                    metal = Metal((x, y), self)
+                    self.grid.place_agent(metal, (x, y))
+
+    def step(self):
+        # Avanzar un paso en la simulación
+        self.schedule.step()
+
+
+
         
-        for i in range(self.number_agents):
-            newAgent = BomberManAgent(i, self)
-            self.schedule.add(newAgent)
+    def find_empty_cell(self):
+        while True:
             x = self.random.randrange(self.grid.width)
             y = self.random.randrange(self.grid.height)
-            self.grid.place_agent(newAgent, (x, y))
-
-    def step(self) -> None:
-        self.schedule.step()
-        #Permite actualizar los datos cada paso
-        self.datacollector.collect(self) #Llamar metodo para recolectra datos de cada iteración
-        if BomberManModel.current_non_wealthy_agents(self)>20:
-            self.running=False
-        
-    def current_wealthy_agents(model) -> int:
-        return sum([1 for agent in model.schedule.agents if agent.wealth>0]) #Contar agentes con poder
-        
-    def current_non_wealthy_agents(model) -> int:
-        return sum([1 for agent in model.schedule.agents if agent.wealth==0]) #Contar agentes sin poder
-    
-    def crearMatrizAgentes(self, matrizArchivo):
-        # Inicializa el contador de ID
-        contadorId = 0
-        
-        # Crea una matriz basada en el archivo proporcionado
-        matriz = [[[] for _ in range(len(matrizArchivo[0]))] for _ in range(len(matrizArchivo))]
-
-        # Devuelve exactamente dos valores: la matriz y el contadorId
-        return matriz, contadorId
-
-       
-    def leerArchivo(self):
-        fileLoad = FileLoad()
-        # Ruta absoluta basada en la ubicación de este archivo (model.py)
-        base_dir = os.path.dirname(__file__)  # Obtiene la ruta de la carpeta de model.py
-        ruta_mapa = os.path.join(base_dir, "../Data/Maps/mapa1.txt")  # Crea la ruta absoluta
-
-        # Normaliza la ruta para que funcione en cualquier sistema operativo
-        ruta_mapa = os.path.normpath(ruta_mapa)
-        matrizArchivo = fileLoad.cargar_matriz_archivo(ruta_mapa)
-        return matrizArchivo
-        
-    def get_valid_nodes(self):
-            nodos_validos = []
-            filas = len(self.matrizArchivo)
-            columnas = len(self.matrizArchivo[0])
-            self.matrizArchivo.reverse()
-            for i in range(filas):
-                for j in range(columnas):
-                    if self.matrizArchivo[i][j] == "C" or self.matrizArchivo[i][j] == "C_g" or self.matrizArchivo[i][j] == "C_b":  # Define tu propio criterio aquí
-                        nodos_validos.append((j, i))
-
-            return nodos_validos
-
-    """
-    Recibe una matriz de agentes y los ubica en la grilla.
-    Cómo mesa ubica las posiciones cómo en el plano cartesiano, se debe recorrer la matriz 
-    de forma inversa
-    """
-    def ubicarAgentes(self, matriz):
-        contadorX=0
-        contadorY=len(matriz)-1
-        for i in range(len(matriz)):
-            #Reinicia el contador de X cuando cambia de fila y disminuye el contador de Y 
-            #para que se ubique en la fila de abajo
-            if (contadorX!=0):
-                contadorY-=1
-                contadorX=0     
-
-            for j in range(len(matriz[i])):
-
-                self.schedule.add(matriz[i][j][0])
-                self.grid.place_agent(matriz[i][j][0], (contadorX, contadorY))
-                contadorX+=1
-                print("contador X:  "+ str(contadorX) +" contador Y "+ str(contadorY) +" "+ str(matriz[i][j][0]))
-
-
-    def nextId(self):
-        self.contadorId+=1
-        return self.contadorId
-    
+            if self.grid.is_cell_empty((x, y)):
+                return x, y
