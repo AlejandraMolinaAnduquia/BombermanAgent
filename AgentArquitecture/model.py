@@ -88,5 +88,3 @@ class MazeModel(Model):
             y = self.random.randrange(self.grid.height)
             if self.grid.is_cell_empty((x, y)):
                 return x, y
-            
-            
