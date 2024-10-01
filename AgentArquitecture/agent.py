@@ -85,7 +85,7 @@ class Bomba(Agent):
         if self.pos is not None:
             x, y = self.pos  # Asignar la posición actual de la bomba
             # Lógica para destruir rocas en las direcciones cardinales
-            for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+            for dx, dy in [(self.poder_destruccion, 0), (-self.poder_destruccion, 0), (0, self.poder_destruccion), (0, -self.poder_destruccion)]:
                 vecino_x, vecino_y = x + dx, y + dy
                 if self.model.grid.out_of_bounds((vecino_x, vecino_y)):
                     continue
@@ -127,5 +127,3 @@ class Metal(Agent):
 
     def step(self):
         pass  # El metal tampoco hace nada, solo es indestructible
-    
-

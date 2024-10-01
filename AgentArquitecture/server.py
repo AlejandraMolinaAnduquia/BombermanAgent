@@ -24,7 +24,9 @@ def agent_portrayal(agent):
     elif isinstance(agent, Comodin):  # Mostrar los comodines
         portrayal["Color"] = "orange"
 
+
     return portrayal
+
 
 
 grid = CanvasGrid(agent_portrayal, 7, 4, 500, 500)
