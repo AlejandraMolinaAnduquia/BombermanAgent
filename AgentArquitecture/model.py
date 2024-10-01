@@ -7,8 +7,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mesa import Model
 from mesa.space import MultiGrid
 from mesa.time import RandomActivation
-from agent import Bomberman
+from agent import Bomberman, Roca, RocaSalida, Metal
 from Controllers.fileLoad import FileLoader
+
 
 class MazeModel(Model):
     def __init__(self, width, height, num_bombermans, num_comodines, mapa_filename):
@@ -67,29 +68,3 @@ class MazeModel(Model):
             y = self.random.randrange(self.grid.height)
             if self.grid.is_cell_empty((x, y)):
                 return x, y
-
-from mesa import Agent
-
-class Roca(Agent):
-    def __init__(self, pos, model):
-        super().__init__(pos, model)
-        self.pos = pos
-
-    def step(self):
-        pass  # Las rocas no hacen nada en cada paso
-
-class RocaSalida(Agent):
-    def __init__(self, pos, model):
-        super().__init__(pos, model)
-        self.pos = pos
-
-    def step(self):
-        pass  # Similar a Roca, pero esta indica que tiene la salida
-
-class Metal(Agent):
-    def __init__(self, pos, model):
-        super().__init__(pos, model)
-        self.pos = pos
-
-    def step(self):
-        pass  # El metal tampoco hace nada, solo es indestructible

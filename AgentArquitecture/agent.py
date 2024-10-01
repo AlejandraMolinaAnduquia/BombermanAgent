@@ -12,56 +12,84 @@ class Bomberman(Agent):
         super().__init__(unique_id, model)
         self.poder_destruccion = poder_destruccion  # Poder de destrucción inicial
         self.bombas = []  # Lista de bombas colocadas
-        self.posicion_actual = None  # Posición actual de Bomberman
 
     def mover(self):
-        # Obtener las celdas adyacentes que son "C" (caminos)
-        vecinos = self.model.grid.get_neighbors(self.pos, moore=False, include_center=False)
-        caminos = []
-        for vecino in vecinos:
-            if isinstance(vecino, tuple):
-                if self.model.grid.is_cell_empty(vecino) or 'C' in self.model.grid.get_cell_list_contents(vecino):
-                    caminos.append(vecino)
-            else:
-                pos = vecino.pos
-                if self.model.grid.is_cell_empty(pos) or 'C' in self.model.grid.get_cell_list_contents(pos):
-                    caminos.append(pos)
-
-        if caminos:
-            nueva_posicion = random.choice(caminos)
-            self.model.grid.move_agent(self, nueva_posicion)
-            self.posicion_actual = nueva_posicion
+        # Obtener las celdas adyacentes que son vacías
+        possible_steps = self.model.grid.get_neighborhood(self.pos, moore=False, include_center=False)
+        empty_cells = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell)]
+        
+        # Mover a una celda vacía si hay alguna disponible
+        if len(empty_cells) > 0:
+            new_position = self.random.choice(empty_cells)
+            self.model.grid.move_agent(self, new_position)
 
     def colocar_bomba(self):
         # Coloca una bomba en la posición actual de Bomberman
-        if self.posicion_actual:
-            bomba = {"pos": self.posicion_actual, "timer": self.poder_destruccion + 2}
-            self.bombas.append(bomba)
-            print(f"Bomba colocada en {self.posicion_actual} con timer {self.poder_destruccion + 2}")
+        bomba = {"pos": self.pos, "timer": 3}  # Temporizador de la bomba
+        self.bombas.append(bomba)
+        print(f"Bomba colocada en {self.pos} con timer 3")
 
-    def explotar_bomba(self):
-        # Explosión de bombas. Solo destruyen rocas "R" en el radio de poder_destruccion
-        for bomba in self.bombas[:]:  # Usamos una copia para iterar
+    def manejar_bombas(self):
+        # Reducir el temporizador de las bombas y explotar si llega a 0
+        bombas_a_explotar = []
+        for bomba in self.bombas:
             bomba["timer"] -= 1
             if bomba["timer"] <= 0:
-                # Buscar celdas en el rango de poder de destrucción
-                rango = self.poder_destruccion
-                for dx in range(-rango, rango + 1):
-                    for dy in range(-rango, rango + 1):
-                        pos_explosion = (bomba["pos"][0] + dx, bomba["pos"][1] + dy)
-                        # Si es una roca "R", se destruye
-                        if self.model.grid.out_of_bounds(pos_explosion):
-                            continue
-                        contenido = self.model.grid.get_cell_list_contents(pos_explosion)
-                        if 'R' in contenido:
-                            self.model.grid.remove_agent(pos_explosion)
-                            print(f"Roca destruida en {pos_explosion}")
-                # Eliminar la bomba del mapa
-                self.bombas.remove(bomba)
+                bombas_a_explotar.append(bomba)
+
+        # Eliminar las bombas que explotan y realizar la explosión
+        for bomba in bombas_a_explotar:
+            print(f"Bomba explotó en {bomba['pos']}")
+            self.bombas.remove(bomba)
+            self.explotar_bomba(bomba['pos'])
+
+    def explotar_bomba(self, pos):
+        # Simular la explosión de la bomba destruyendo rocas cercanas
+        neighboring_cells = self.model.grid.get_neighborhood(pos, moore=True, include_center=True)
+        for neighbor in neighboring_cells:
+            contents = self.model.grid.get_cell_list_contents(neighbor)
+            for obj in contents:
+                if isinstance(obj, Roca):
+                    print(f"Roca destruida en {neighbor}")
+                    self.model.grid.remove_agent(obj)  # Eliminar la roca destruida
+
+    def recoger_comodin(self):
+        # Si Bomberman destruye una roca con un comodín debajo, aumenta su poder de destrucción
+        vecinos = self.model.grid.get_neighbors(self.pos, moore=False, include_center=False)
+        for vecino in vecinos:
+            if isinstance(vecino, RocaSalida):  # Asumiendo que el comodín está debajo de una RocaSalida
+                self.poder_destruccion += 1
+                print(f"Bomberman ha recogido un comodín. Poder de destrucción incrementado a {self.poder_destruccion}.")
 
     def step(self):
         # Acción que realiza el agente en cada paso de la simulación
         self.mover()  # Mover Bomberman
         if random.random() < 0.1:  # Probabilidad de colocar una bomba
             self.colocar_bomba()
-        self.explotar_bomba()  # Verificar explosiones de bombas
+        self.manejar_bombas()  # Manejar bombas y explosiones
+        self.recoger_comodin()  # Verificar si se ha recogido un comodín
+
+
+class Roca(Agent):
+    def __init__(self, pos, model):
+        super().__init__(pos, model)
+        self.pos = pos
+
+    def step(self):
+        pass  # Las rocas no hacen nada en cada paso
+
+class RocaSalida(Agent):
+    def __init__(self, pos, model):
+        super().__init__(pos, model)
+        self.pos = pos
+
+    def step(self):
+        pass  # Similar a Roca, pero esta indica que tiene la salida
+
+class Metal(Agent):
+    def __init__(self, pos, model):
+        super().__init__(pos, model)
+        self.pos = pos
+
+    def step(self):
+        pass  # El metal tampoco hace nada, solo es indestructible
