@@ -20,9 +20,9 @@ def agent_portrayal(agent):
     elif isinstance(agent, Bomberman):
         portrayal["Color"] = "blue"
     elif isinstance(agent, Bomba):  # Mostrar la bomba
-        
         portrayal["Color"] = "yellow"
-        
+    elif isinstance(agent, Comodin):  # Mostrar los comodines
+        portrayal["Color"] = "orange"
 
     return portrayal
 

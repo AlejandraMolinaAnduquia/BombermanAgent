@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mesa import Model
 from mesa.space import MultiGrid
 from mesa.time import RandomActivation
-from agent import Bomberman, Roca, RocaSalida, Metal, Bomba
+from agent import Bomberman, Roca, RocaSalida, Metal, Bomba, Comodin
 from Controllers.fileLoad import FileLoader
 
 
@@ -73,3 +73,5 @@ class MazeModel(Model):
             y = self.random.randrange(self.grid.height)
             if self.grid.is_cell_empty((x, y)):
                 return x, y
+            
+            
