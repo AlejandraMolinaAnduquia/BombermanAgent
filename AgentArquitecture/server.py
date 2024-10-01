@@ -7,6 +7,7 @@ from mesa.visualization.ModularVisualization import ModularServer
 from mesa.visualization.UserParam import Slider  # Importar Slider para la interfaz
 from model import *
 
+
 def agent_portrayal(agent):
     portrayal = {"Shape": "circle", "Color": "blue", "r": 0.8, "Layer": 1}
     
@@ -18,8 +19,13 @@ def agent_portrayal(agent):
         portrayal["Color"] = "black"
     elif isinstance(agent, Bomberman):
         portrayal["Color"] = "blue"
+    elif isinstance(agent, Bomba):  # Mostrar la bomba
+        
+        portrayal["Color"] = "yellow"
+        
 
     return portrayal
+
 
 grid = CanvasGrid(agent_portrayal, 7, 4, 500, 500)
 

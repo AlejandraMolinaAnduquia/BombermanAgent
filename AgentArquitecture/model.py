@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mesa import Model
 from mesa.space import MultiGrid
 from mesa.time import RandomActivation
-from agent import Bomberman, Roca, RocaSalida, Metal
+from agent import Bomberman, Roca, RocaSalida, Metal, Bomba
 from Controllers.fileLoad import FileLoader
 
 
@@ -16,6 +16,7 @@ class MazeModel(Model):
         self.grid = MultiGrid(width, height, True)
         self.schedule = RandomActivation(self)
         self.num_comodines = num_comodines
+        self.next_id = 0  # Inicializar el contador de IDs
 
         # Cargar el mapa desde el archivo
         file_loader = FileLoader(mapa_filename)
@@ -36,6 +37,10 @@ class MazeModel(Model):
                     if cell == 'C_b':
                         self.grid.place_agent(bomberman, (x, y))
                         break
+                    
+    def next_id(self):
+        self.next_id += 1
+        return self.next_id
 
     def inicializar_mapa(self):
         # Recorre el mapa y coloca los objetos en la grilla
