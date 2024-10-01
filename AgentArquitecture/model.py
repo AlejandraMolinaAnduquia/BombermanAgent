@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mesa import Model
 from mesa.space import MultiGrid
 from mesa.time import RandomActivation
-from agent import Bomberman, Roca, RocaSalida, Metal, Bomba, Comodin
+from agent import Bomberman, Roca, RocaSalida, Metal, Bomba, Comodin, Explosion
 from Controllers.fileLoad import FileLoader
 
 
@@ -16,7 +16,7 @@ import random
 
 class MazeModel(Model):
     def __init__(self, width, height, num_bombermans, num_comodines, mapa_filename):
-        self.grid = MultiGrid(width, height, True)
+        self.grid = MultiGrid(width, height, False)
         self.schedule = RandomActivation(self)
         self.next_id = 0  # Inicializar el contador de IDs
 
@@ -88,5 +88,3 @@ class MazeModel(Model):
             y = self.random.randrange(self.grid.height)
             if self.grid.is_cell_empty((x, y)):
                 return x, y
-            
-            

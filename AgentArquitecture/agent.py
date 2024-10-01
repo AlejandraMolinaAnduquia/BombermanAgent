@@ -62,7 +62,18 @@ class Bomberman(Agent):
             self.colocar_bomba()
         self.recoger_comodin()
 
+class Explosion(Agent):
+    def __init__(self, pos, model, duration):
+        super().__init__(pos, model)
+        self.pos = pos
+        self.duration = duration  # Tiempo que la explosión será visible
 
+    def step(self):
+        self.duration -= 1
+        if self.duration <= 0:
+            self.model.grid.remove_agent(self)
+            self.model.schedule.remove(self)
+            
 class Bomba(Agent):
     def __init__(self, pos, model, poder_destruccion, bomberman):
         super().__init__(pos, model)
@@ -73,6 +84,7 @@ class Bomba(Agent):
 
     def step(self):
         self.timer -= 1
+        print(f"Temporizador de bomba en {self.timer}")  # Añade esto para verificar
         if self.timer <= 0:
             print(f"Bomba explotó en {self.pos}")
             self.explotar()
@@ -84,16 +96,23 @@ class Bomba(Agent):
         if self.pos is not None:
             x, y = self.pos  # Obtener la posición de la bomba
             # Lógica para destruir rocas en las direcciones cardinales
-            for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+            for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:  # Explosión en las 4 direcciones
                 for alcance in range(1, self.poder_destruccion + 1):
                     vecino_x, vecino_y = x + dx * alcance, y + dy * alcance
                     if self.model.grid.out_of_bounds((vecino_x, vecino_y)):
                         break  # Salir si la celda está fuera de los límites
-                    vecino = self.model.grid.get_cell_list_contents((vecino_x, vecino_y))
-                    for obj in vecino:
+                    vecinos = self.model.grid.get_cell_list_contents((vecino_x, vecino_y))
+
+                    # Detener la explosión si se encuentra con metal
+                    if any(isinstance(obj, Metal) for obj in vecinos):
+                        break
+
+                    # Destruir rocas o rocas con salida
+                    for obj in vecinos:
                         if isinstance(obj, Roca) or isinstance(obj, RocaSalida):
                             print(f"Roca destruida en ({vecino_x}, {vecino_y})")
                             self.model.grid.remove_agent(obj)  # Eliminar la roca del grid
+                            
                             # Colocar un comodín si hay disponibles
                             if self.model.comodines_colocados < self.model.num_comodines:
                                 comodin = Comodin((vecino_x, vecino_y), self.model)
@@ -101,10 +120,19 @@ class Bomba(Agent):
                                 self.model.schedule.add(comodin)
                                 self.model.comodines_colocados += 1
                                 print(f"Comodín colocado en ({vecino_x}, {vecino_y})")
-                            break  # Dejar de comprobar esta dirección después de destruir la roca
+                            break  # Detener la explosión en esta dirección después de destruir la roca
+                    
+                    # Si no se destruye una roca, la explosión sigue en esa dirección
+                    else:
+                        print(f"Explosión alcanzó ({vecino_x}, {vecino_y})")
+                        explosion = Explosion((vecino_x, vecino_y), self.model, duration=1)  # Pintar por 1 paso
+                        self.model.grid.place_agent(explosion, (vecino_x, vecino_y))
+                        self.model.schedule.add(explosion)
+                        continue  # Continuar con el siguiente alcance en la misma dirección
 
+                    break  # Detenerse al encontrar una roca o metal en la dirección actual
 
-
+            
 
 
 class Roca(Agent):
