@@ -80,27 +80,30 @@ class Bomba(Agent):
             self.model.schedule.remove(self)  # Eliminar la bomba del schedule
             self.bomberman.bomba_activa = False  # Permitir que el Bomberman coloque otra bomba
 
-# Modifica el método explotar en la clase Bomba
     def explotar(self):
         if self.pos is not None:
-            x, y = self.pos  # Asignar la posición actual de la bomba
+            x, y = self.pos  # Obtener la posición de la bomba
             # Lógica para destruir rocas en las direcciones cardinales
-            for dx, dy in [(self.poder_destruccion, 0), (-self.poder_destruccion, 0), (0, self.poder_destruccion), (0, -self.poder_destruccion)]:
-                vecino_x, vecino_y = x + dx, y + dy
-                if self.model.grid.out_of_bounds((vecino_x, vecino_y)):
-                    continue
-                vecino = self.model.grid.get_cell_list_contents([(vecino_x, vecino_y)])
-                for obj in vecino:
-                    if isinstance(obj, Roca):
-                        self.model.grid.remove_agent(obj)
-                        print(f"Roca destruida en ({vecino_x}, {vecino_y})")
-                        # Colocar un comodín en la posición de la roca destruida
-                        comodin = Comodin((vecino_x, vecino_y), self.model)
-                        self.model.grid.place_agent(comodin, (vecino_x, vecino_y))
-                        self.model.schedule.add(comodin)  # Añadir el comodín al schedule
-                        print(f"Comodín colocado en ({vecino_x}, {vecino_y})")
-        else:
-            print("Error: La bomba no tiene una posición válida.")
+            for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                for alcance in range(1, self.poder_destruccion + 1):
+                    vecino_x, vecino_y = x + dx * alcance, y + dy * alcance
+                    if self.model.grid.out_of_bounds((vecino_x, vecino_y)):
+                        break  # Salir si la celda está fuera de los límites
+                    vecino = self.model.grid.get_cell_list_contents((vecino_x, vecino_y))
+                    for obj in vecino:
+                        if isinstance(obj, Roca) or isinstance(obj, RocaSalida):
+                            print(f"Roca destruida en ({vecino_x}, {vecino_y})")
+                            self.model.grid.remove_agent(obj)  # Eliminar la roca del grid
+                            # Colocar un comodín si hay disponibles
+                            if self.model.comodines_colocados < self.model.num_comodines:
+                                comodin = Comodin((vecino_x, vecino_y), self.model)
+                                self.model.grid.place_agent(comodin, (vecino_x, vecino_y))
+                                self.model.schedule.add(comodin)
+                                self.model.comodines_colocados += 1
+                                print(f"Comodín colocado en ({vecino_x}, {vecino_y})")
+                            break  # Dejar de comprobar esta dirección después de destruir la roca
+
+
 
 
 
