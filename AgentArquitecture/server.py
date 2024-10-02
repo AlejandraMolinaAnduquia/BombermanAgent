@@ -68,7 +68,7 @@ server = ModularServer(
         "width": 7,
         "height": 4,
         "num_bombermans": Slider("Número de Bombermans", 1, 1, 5, 1),
-        "num_comodines": Slider("Número de Comodines", 1, 1, max_comodines, 1),
+        "num_comodines": Slider("Número de Comodines", 1, 1, max_comodines-1, 1),
         "mapa_filename": mapa_filename
     }
 )
