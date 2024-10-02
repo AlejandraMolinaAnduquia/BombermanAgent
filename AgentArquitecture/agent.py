@@ -83,6 +83,13 @@ class Explosion(Agent):
         self.duration = duration  # Tiempo que la explosión será visible
 
     def step(self):
+        # Verificar si hay un Bomberman en la posición de la explosión
+        contenido_celda = self.model.grid.get_cell_list_contents([self.pos])
+        for obj in contenido_celda:
+            if isinstance(obj, Bomberman):
+                print(f"Bomberman fue alcanzado por la explosión en {self.pos}. Simulación terminada.")
+                self.model.terminar_simulacion()  # Terminar la simulación si Bomberman es alcanzado
+
         self.duration -= 1
         if self.duration <= 0:
             self.model.grid.remove_agent(self)
@@ -131,6 +138,13 @@ class Bomba(Agent):
                         print(f"Explosión ignoró la roca de salida en ({vecino_x}, {vecino_y})")
                         continue  # La explosión no afecta a la roca de salida
 
+                    # Detectar si Bomberman es alcanzado
+                    for obj in vecinos:
+                        if isinstance(obj, Bomberman):
+                            print(f"Bomberman fue alcanzado por la explosión en ({vecino_x}, {vecino_y}). Simulación terminada.")
+                            self.model.terminar_simulacion()  # Llamar a la función para terminar la simulación
+                            return  # Detener la explosión y la simulación
+
                     # Destruir rocas
                     for obj in vecinos:
                         if isinstance(obj, Roca):
@@ -162,6 +176,7 @@ class Bomba(Agent):
                         continue  # Continuar con el siguiente alcance en la misma dirección
 
                     break  # Detenerse al encontrar una roca o metal en la dirección actual
+
 
 
             
