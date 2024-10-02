@@ -24,14 +24,20 @@ class Bomberman(Agent):
 
     def mover(self):
         possible_steps = self.model.grid.get_neighborhood(self.pos, moore=False, include_center=False)
-        # Filtrar las celdas vacías y las celdas de comodines
+        # Filtrar las celdas vacías, celdas de comodines y celdas de salida
         empty_cells = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell) or 
-                    isinstance(self.model.grid.get_cell_list_contents([cell])[0], Comodin)]
+                    isinstance(self.model.grid.get_cell_list_contents([cell])[0], Comodin) or
+                    isinstance(self.model.grid.get_cell_list_contents([cell])[0], RocaSalida)]
         
         if len(empty_cells) > 0:
             new_position = self.random.choice(empty_cells)
             self.model.grid.move_agent(self, new_position)
             print(f"Bomberman se movió a {self.pos}")
+            
+            # Verificar si se ha movido a una roca de salida
+            if any(isinstance(obj, RocaSalida) for obj in self.model.grid.get_cell_list_contents([self.pos])):
+                print("Bomberman ha alcanzado la salida. Simulación finalizada.")
+                self.model.terminar_simulacion()  # Llamar a la función para terminar la simulación
 
 
     def colocar_bomba(self):
@@ -120,13 +126,26 @@ class Bomba(Agent):
                         print(f"Explosión ignoró el comodín en ({vecino_x}, {vecino_y})")
                         continue  # La explosión continúa su camino sin afectar el comodín
 
-                    # Destruir rocas o rocas con salida
+                    # No afectar la RocaSalida
+                    if any(isinstance(obj, RocaSalida) for obj in vecinos):
+                        print(f"Explosión ignoró la roca de salida en ({vecino_x}, {vecino_y})")
+                        continue  # La explosión no afecta a la roca de salida
+
+                    # Destruir rocas
                     for obj in vecinos:
-                        if isinstance(obj, Roca) or isinstance(obj, RocaSalida):
+                        if isinstance(obj, Roca):
                             print(f"Roca destruida en ({vecino_x}, {vecino_y})")
                             self.model.grid.remove_agent(obj)  # Eliminar la roca del grid
                             
-                            # Colocar un comodín si hay disponibles
+                            # Colocar una RocaSalida aleatoriamente
+                            if random.random() < 0.1:  # 10% de probabilidad de crear RocaSalida
+                                roca_salida = RocaSalida((vecino_x, vecino_y), self.model)
+                                self.model.grid.place_agent(roca_salida, (vecino_x, vecino_y))
+                                self.model.schedule.add(roca_salida)
+                                print(f"Roca de salida colocada en ({vecino_x}, {vecino_y})")
+                                break  # No colocar comodín si se coloca una salida
+
+                            # Colocar un comodín si no hay salida
                             if self.model.comodines_colocados < self.model.num_comodines:
                                 comodin = Comodin((vecino_x, vecino_y), self.model)
                                 self.model.grid.place_agent(comodin, (vecino_x, vecino_y))
@@ -134,9 +153,8 @@ class Bomba(Agent):
                                 self.model.comodines_colocados += 1
                                 print(f"Comodín colocado en ({vecino_x}, {vecino_y})")
                             break  # Detener la explosión en esta dirección después de destruir la roca
-                    
-                    # Si no se destruye una roca ni hay metal, la explosión sigue en esa dirección
                     else:
+                        # Si no hay roca ni metal, continuar la explosión
                         print(f"Explosión alcanzó ({vecino_x}, {vecino_y})")
                         explosion = Explosion((vecino_x, vecino_y), self.model, duration=1)  # Pintar por 1 paso
                         self.model.grid.place_agent(explosion, (vecino_x, vecino_y))
