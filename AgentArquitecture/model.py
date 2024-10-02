@@ -18,7 +18,7 @@ class MazeModel(Model):
     def __init__(self, width, height, num_bombermans, num_comodines, mapa_filename):
         self.grid = MultiGrid(width, height, False)
         self.schedule = RandomActivation(self)
-        self.next_id = 0  # Inicializar el contador de IDs
+        
 
         # Cargar el mapa desde el archivo
         file_loader = FileLoader(mapa_filename)
@@ -44,8 +44,7 @@ class MazeModel(Model):
                         self.grid.place_agent(bomberman, (x, y))
                         break
 
-                    
-
+    
     def contar_rocas(self):
         # Contar cuántas rocas hay en el mapa
         total_rocas = 0

@@ -36,6 +36,13 @@ class Bomberman(Agent):
 
     def colocar_bomba(self):
         if not self.bomba_activa:
+            # Verificar si la celda actual contiene un comodín
+            celda_actual = self.model.grid.get_cell_list_contents([self.pos])
+            if any(isinstance(obj, Comodin) for obj in celda_actual):
+                print(f"No se puede colocar bomba en {self.pos} porque hay un comodín.")
+                return  # No colocar la bomba si hay un comodín en la celda
+
+            # Si no hay comodín, se puede colocar la bomba
             bomba = Bomba(self.pos, self.model, self.poder_destruccion, self)
             self.model.grid.place_agent(bomba, self.pos)
             self.model.schedule.add(bomba)
@@ -43,6 +50,7 @@ class Bomberman(Agent):
             print(f"Bomba colocada en {self.pos} con timer {bomba.timer}")
         else:
             print("No se puede colocar otra bomba hasta que la actual explote.")
+
 
     def recoger_comodin(self):
         # Verificar solo la celda actual del Bomberman
@@ -107,6 +115,11 @@ class Bomba(Agent):
                     if any(isinstance(obj, Metal) for obj in vecinos):
                         break
 
+                    # Si hay un comodín, la explosión sigue sin afectarlo
+                    if any(isinstance(obj, Comodin) for obj in vecinos):
+                        print(f"Explosión ignoró el comodín en ({vecino_x}, {vecino_y})")
+                        continue  # La explosión continúa su camino sin afectar el comodín
+
                     # Destruir rocas o rocas con salida
                     for obj in vecinos:
                         if isinstance(obj, Roca) or isinstance(obj, RocaSalida):
@@ -122,7 +135,7 @@ class Bomba(Agent):
                                 print(f"Comodín colocado en ({vecino_x}, {vecino_y})")
                             break  # Detener la explosión en esta dirección después de destruir la roca
                     
-                    # Si no se destruye una roca, la explosión sigue en esa dirección
+                    # Si no se destruye una roca ni hay metal, la explosión sigue en esa dirección
                     else:
                         print(f"Explosión alcanzó ({vecino_x}, {vecino_y})")
                         explosion = Explosion((vecino_x, vecino_y), self.model, duration=1)  # Pintar por 1 paso
@@ -131,6 +144,7 @@ class Bomba(Agent):
                         continue  # Continuar con el siguiente alcance en la misma dirección
 
                     break  # Detenerse al encontrar una roca o metal en la dirección actual
+
 
             
 
