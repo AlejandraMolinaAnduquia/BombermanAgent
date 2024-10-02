@@ -5,7 +5,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mesa.visualization.modules import CanvasGrid
 from mesa.visualization.ModularVisualization import ModularServer
 from mesa.visualization.UserParam import Slider  # Importar Slider para la interfaz
-from model import *
+from .model import *
+
 
 def agent_portrayal(agent):
     portrayal = {"Shape": "circle", "Color": "blue", "r": 0.8, "Layer": 1}

@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mesa import Model
 from mesa.space import MultiGrid
 from mesa.time import RandomActivation
-from agent import Bomberman, Roca, RocaSalida, Metal, Bomba, Comodin, Explosion
+from .agent import Bomberman, Roca, RocaSalida, Metal, Bomba, Comodin, Explosion
 from Controllers.fileLoad import FileLoader
 
 
@@ -78,8 +78,12 @@ class MazeModel(Model):
         # Avanzar un paso en la simulación
         self.schedule.step()
 
-
-
+    def find_exit(self):
+        for y, row in enumerate(self.mapa):
+            for x, cell in enumerate(row):
+                if cell == 'S':  # Supongo que 'S' es el indicador de salida en el mapa
+                    return (x, y)
+        return None  # No se encontró la salida
         
     def find_empty_cell(self):
         while True:
