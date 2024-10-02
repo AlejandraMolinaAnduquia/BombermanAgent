@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mesa import Model
 from mesa.space import MultiGrid
 from mesa.time import RandomActivation
-from .agent import Bomberman, Roca, RocaSalida, Metal, Bomba, Comodin, Explosion
+from agent import Bomberman, Roca, RocaSalida, Metal, Bomba, Comodin, Explosion
 from Controllers.fileLoad import FileLoader
 
 
@@ -19,14 +19,13 @@ class MazeModel(Model):
         self.grid = MultiGrid(width, height, False)
         self.schedule = RandomActivation(self)
         
-
         # Cargar el mapa desde el archivo
         file_loader = FileLoader(mapa_filename)
         self.mapa = file_loader.cargar_mapa()  # Inicializar el mapa aquí
 
-        # Contar el número de rocas después de que el mapa haya sido cargado
         self.num_comodines = min(num_comodines, self.contar_rocas())  # Limitar la cantidad de comodines al número de rocas
         self.comodines_colocados = 0  # Contador de comodines colocados
+        self.salida_colocada = False  # Indica si la RocaSalida ya fue colocada
 
         # Inicializar el mapa
         self.inicializar_mapa()
@@ -44,13 +43,16 @@ class MazeModel(Model):
                         self.grid.place_agent(bomberman, (x, y))
                         break
 
+    def terminar_simulacion(self):
+        print("¡Simulación finalizada! Bomberman ha llegado a la salida.")
+        self.running = False  # Detener la simulación
     
     def contar_rocas(self):
         # Contar cuántas rocas hay en el mapa
         total_rocas = 0
         for y, row in enumerate(self.mapa):
             for cell in row:
-                if cell == 'R' or cell == 'R_s':  # Contar rocas y rocas con salida
+                if cell == 'R' :  # Contar rocas 
                     total_rocas += 1
         return total_rocas
 
@@ -81,9 +83,10 @@ class MazeModel(Model):
     def find_exit(self):
         for y, row in enumerate(self.mapa):
             for x, cell in enumerate(row):
-                if cell == 'R_s':  # Supongo que 'R_S' es el indicador de salida en el mapa
+                if cell == 'R_s':  # 'R_s' indica la salida en el mapa
                     return (x, y)
-        return None  # No se encontró la salida
+        return None  # Si no se encuentra la salida
+
         
     def find_empty_cell(self):
         while True:
