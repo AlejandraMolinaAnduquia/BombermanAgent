@@ -1,0 +1,4 @@
+C,C,R,C,C,R,R
+C,M,R,M,R,M,C
+R,C,C,C,R,R,C
+C,M,C_b,M,C,M,C

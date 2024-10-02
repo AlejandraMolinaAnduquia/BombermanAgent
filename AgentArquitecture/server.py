@@ -18,10 +18,18 @@ def agent_portrayal(agent):
         portrayal["Color"] = "black"
     elif isinstance(agent, Bomberman):
         portrayal["Color"] = "blue"
-    elif isinstance(agent, Bomba):  # Mostrar la bomba
+    elif isinstance(agent, Bomba):  
         portrayal["Color"] = "yellow"
-    elif isinstance(agent, Comodin):  # Mostrar los comodines
+        portrayal["Layer"] = 2  
+    elif isinstance(agent, Comodin):  
         portrayal["Color"] = "orange"
+        portrayal["r"] = 0.5  
+    
+    elif isinstance(agent, Explosion):
+        
+        portrayal["Color"] = "red"  # Color de la explosión
+        portrayal["r"] = 0.9
+
 
     return portrayal
 
@@ -31,12 +39,13 @@ def contar_rocas_en_mapa(mapa_filename):
     return temp_model.contar_rocas()
 
 # Cargar el número de rocas del mapa seleccionado
-mapa_filename = "Data/Maps/mapa1.txt"
+mapa_filename = "Data/Maps/mapa3.txt"
 max_comodines = contar_rocas_en_mapa(mapa_filename)
 
+# Crear la grilla donde se representarán los agentes
 grid = CanvasGrid(agent_portrayal, 7, 4, 500, 500)
 
-# Crear sliders dinámicamente después de contar las rocas
+# Configurar el servidor con sliders dinámicos basados en el número de rocas
 server = ModularServer(
     MazeModel,
     [grid],
@@ -51,5 +60,4 @@ server = ModularServer(
 )
 
 server.port = 8521
-
 server.launch()
