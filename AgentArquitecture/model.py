@@ -80,7 +80,12 @@ class MazeModel(Model):
         # Avanzar un paso en la simulación
         self.schedule.step()
 
-
+    def find_exit(self):
+        for y, row in enumerate(self.mapa):
+            for x, cell in enumerate(row):
+                if cell == 'R_s':  # 'R_s' indica la salida en el mapa
+                    return (x, y)
+        return None  # Si no se encuentra la salida
 
         
     def find_empty_cell(self):

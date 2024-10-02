@@ -1,5 +1,8 @@
+from collections import deque
+from model import *
 import os
 import sys
+
 
 # Agregar el directorio raíz del proyecto al PYTHONPATH
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -21,8 +24,98 @@ class Bomberman(Agent):
         super().__init__(unique_id, model)
         self.poder_destruccion = poder_destruccion
         self.bomba_activa = False
+        self.ruta_hacia_salida = None  # Para almacenar la ruta calculada por BFS
 
-    def mover(self):
+    from collections import deque
+
+class Bomberman(Agent):
+    def __init__(self, unique_id, model, poder_destruccion):
+        super().__init__(unique_id, model)
+        self.poder_destruccion = poder_destruccion
+        self.bomba_activa = False
+        self.ruta_hacia_salida = None  # Almacenará la ruta hacia la salida
+
+    def bfs_move(self):
+        # Posición inicial de Bomberman
+        start_pos = self.pos
+        print(f"Bomberman empieza en: {start_pos}")
+
+        # Encontrar la salida
+        goal_pos = self.model.find_exit()
+        if not goal_pos:
+            print("No se encontró la salida en el mapa.")
+            return
+
+        # Inicializar estructuras para BFS
+        cola = deque([start_pos])  # Cola de estatus con la posición inicial
+        visitados = {start_pos}  # Conjunto para marcar las posiciones ya visitadas
+        caminos = {start_pos: None}  # Diccionario para rastrear el camino
+
+        # Mientras haya nodos en la cola, se continúa el proceso
+        while cola:
+            actual = cola.popleft()  # Saca la primera posición de la cola
+            print(f"Visitando: {actual}")
+
+            # Si llegamos a la salida, reconstruir la ruta
+            if actual == goal_pos:
+                print(f"Salida encontrada en: {actual}")
+                self.ruta_hacia_salida = []
+                while actual:
+                    self.ruta_hacia_salida.insert(0, actual)
+                    actual = caminos[actual]
+                print(f"Ruta hacia la salida: {self.ruta_hacia_salida}")
+                return
+
+            # Obtener los vecinos en las 4 direcciones (izquierda, arriba, abajo, derecha)
+            vecinos = self.get_vecinos(actual)
+
+            for vecino in vecinos:
+                if vecino not in visitados:  # Solo si no ha sido visitado
+                    cola.append(vecino)  # Agregar a la cola de estatus
+                    visitados.add(vecino)  # Marcar como visitado
+                    caminos[vecino] = actual  # Mantener el camino
+                    print(f"Añadiendo vecino: {vecino}")
+
+        print("No se encontró la salida después de recorrer todos los posibles caminos.")
+
+    def get_vecinos(self, posicion):
+        # Obtener los vecinos en las direcciones cardinales: izquierda, arriba, abajo, derecha
+        x, y = posicion
+        vecinos = []
+        direcciones = [(-1, 0), (0, -1), (0, 1), (1, 0)]  # Izquierda, arriba, abajo, derecha
+        for dx, dy in direcciones:
+            vecino = (x + dx, y + dy)
+            if not self.model.grid.out_of_bounds(vecino):  # Asegurarse de que no está fuera de los límites
+                # Solo incluir el vecino si está vacío o tiene la salida
+                contenido = self.model.grid.get_cell_list_contents([vecino])
+                if self.model.grid.is_cell_empty(vecino) or isinstance(contenido[0], RocaSalida):
+                    vecinos.append(vecino)
+        return vecinos
+
+
+    def step(self):
+        # Si no tiene una ruta calculada por BFS, intentar calcularla
+        if not self.ruta_hacia_salida:
+            self.bfs_move()  # Realiza el cálculo de BFS si aún no tiene la ruta
+
+        # Si ya tiene una ruta, seguirla
+        if self.ruta_hacia_salida and len(self.ruta_hacia_salida) > 0:
+            next_move = self.ruta_hacia_salida.pop(0)  # Extraer el siguiente paso de la ruta
+            self.model.grid.move_agent(self, next_move)  # Mover Bomberman a la nueva posición
+            print(f"Bomberman se movió a {next_move}")
+        else:
+            print("No hay ruta disponible para Bomberman o ya ha alcanzado su destino.")
+
+        # Colocar bomba con probabilidad del 10%
+        if random.random() < 0.1:
+            self.colocar_bomba()
+
+        # Recoger comodín si está en la misma celda
+        self.recoger_comodin()
+
+
+
+    '''def mover(self):
         possible_steps = self.model.grid.get_neighborhood(self.pos, moore=False, include_center=False)
         # Filtrar las celdas vacías, celdas de comodines y celdas de salida
         empty_cells = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell) or 
@@ -37,7 +130,7 @@ class Bomberman(Agent):
             # Verificar si se ha movido a una roca de salida
             if any(isinstance(obj, RocaSalida) for obj in self.model.grid.get_cell_list_contents([self.pos])):
                 print("Bomberman ha alcanzado la salida. Simulación finalizada.")
-                self.model.terminar_simulacion()  # Llamar a la función para terminar la simulación
+                self.model.terminar_simulacion()  # Llamar a la función para terminar la simulación'''
 
 
     def colocar_bomba(self):
@@ -68,13 +161,6 @@ class Bomberman(Agent):
                 self.model.schedule.remove(obj)  # Elimina el comodín del schedule
                 print(f"Bomberman ha recogido un comodín. Poder de destrucción incrementado a {self.poder_destruccion}.")
                 break
-
-            
-    def step(self):
-        self.mover()
-        if random.random() < 0.1:
-            self.colocar_bomba()
-        self.recoger_comodin()
 
 class Explosion(Agent):
     def __init__(self, pos, model, duration):
