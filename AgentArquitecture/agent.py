@@ -30,6 +30,7 @@ class Bomberman(Agent):
         start_pos = self.pos  # Posición actual de Bomberman
         goal_pos = self.model.find_exit()  # Método que busca la salida en el modelo
         
+        print(f"Ruta calculada: {self.ruta_hacia_salida}")        
         if not goal_pos:
             print("Salida no encontrada en el mapa.")
             return

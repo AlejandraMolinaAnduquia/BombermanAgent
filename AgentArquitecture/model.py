@@ -81,7 +81,7 @@ class MazeModel(Model):
     def find_exit(self):
         for y, row in enumerate(self.mapa):
             for x, cell in enumerate(row):
-                if cell == 'S':  # Supongo que 'S' es el indicador de salida en el mapa
+                if cell == 'R_s':  # Supongo que 'R_S' es el indicador de salida en el mapa
                     return (x, y)
         return None  # No se encontró la salida
         

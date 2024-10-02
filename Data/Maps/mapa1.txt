@@ -1,4 +1,10 @@
-C,C,C,C,C_b,R,C
-C,M,C,M,C,M,C
-R,C,C_g,C,C,C,C
-C,M,C,M,C,M,C
+R,C,C,C,C_b,R,C,C,M,C
+C,M,C,M,C,M,R,C,M,C,C
+R_s,C,C_g,C,C,C,C_b,C,R,C
+C,M,C,M,C,M,C,M,C,C,R
+C,M,C_b,M,C,M,R,C,M,C,C
+R,C,C_g,C,R,C,C_b,C,R,C
+C,C,C,C,M,C,C_b,C,M,C
+C,M,C,C,C,M,R,C,M,C,C
+C,C,C,C,R,C,C,C,C,C,C
+C,M,C,M,C,M,R,C,M,C,C
