@@ -4,32 +4,46 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mesa.visualization.modules import CanvasGrid
 from mesa.visualization.ModularVisualization import ModularServer
-from mesa.visualization.UserParam import Slider  # Importar Slider para la interfaz
+from mesa.visualization.UserParam import Slider
 from model import *
 
 def agent_portrayal(agent):
-    portrayal = {"Shape": "circle", "Color": "blue", "r": 0.8, "Layer": 1}
-    
-    if isinstance(agent, Roca):
-        portrayal["Color"] = "green"
-    elif isinstance(agent, RocaSalida):
-        portrayal["Color"] = "red"
-    elif isinstance(agent, Metal):
-        portrayal["Color"] = "black"
-    elif isinstance(agent, Bomberman):
-        portrayal["Color"] = "blue"
-    elif isinstance(agent, Bomba):  
-        portrayal["Color"] = "yellow"
-        portrayal["Layer"] = 2  
-    elif isinstance(agent, Comodin):  
-        portrayal["Color"] = "orange"
-        portrayal["r"] = 0.5  
-    
-    elif isinstance(agent, Explosion):
-        
-        portrayal["Color"] = "red"  # Color de la explosión
-        portrayal["r"] = 0.9
+    portrayal = {}
 
+    if isinstance(agent, Roca):
+        portrayal["Shape"] = "Data/imagenes/roca.png"  # Ruta a la imagen de la roca
+        portrayal["scale"] = 1  # Escala de la imagen
+        portrayal["Layer"] = 1
+
+    elif isinstance(agent, RocaSalida):
+        portrayal["Shape"] = "Data/imagenes/salida.png"  # Imagen de la roca con salida
+        portrayal["scale"] = 1
+        portrayal["Layer"] = 1
+
+    elif isinstance(agent, Metal):
+        portrayal["Shape"] = "Data/imagenes/metal.jpg"  # Imagen de metal
+        portrayal["scale"] = 1
+        portrayal["Layer"] = 1
+
+    elif isinstance(agent, Bomberman):
+        portrayal["Shape"] = "Data/imagenes/bomberman.png"  # Imagen de Bomberman
+        portrayal["scale"] = 1
+        portrayal["Layer"] = 2
+
+    elif isinstance(agent, Bomba):
+        portrayal["Shape"] = "Data/imagenes/bomba.jpg"  # Imagen de la bomba
+        portrayal["scale"] = 0.8
+        portrayal["Layer"] = 3
+
+    elif isinstance(agent, Comodin):
+        portrayal["Shape"] = "Data/imagenes/fuego.png"  # Imagen de comodín
+        portrayal["scale"] = 0.5
+        portrayal["Layer"] = 2
+
+    elif isinstance(agent, Explosion):
+        portrayal["Shape"] = "Data/imagenes/explosion.png"  # Imagen de explosión
+        portrayal["scale"] = 1
+        portrayal["Layer"] = 4
 
     return portrayal
 
@@ -53,8 +67,8 @@ server = ModularServer(
     {
         "width": 7,
         "height": 4,
-        "num_bombermans": Slider("Número de Bombermans", 1, 1, 5, 1),  # Slider para elegir el número de Bombermans
-        "num_comodines": Slider("Número de Comodines", 1, 1, max_comodines, 1),  # Slider dinámico basado en las rocas
+        "num_bombermans": Slider("Número de Bombermans", 1, 1, 5, 1),
+        "num_comodines": Slider("Número de Comodines", 1, 1, max_comodines, 1),
         "mapa_filename": mapa_filename
     }
 )
