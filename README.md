@@ -5,6 +5,7 @@ Empieza el proyecto:
 
 1. Entorno virtualizado:
 - Te paras en la carpeta donde vas a desarrollar tu proyecto
+
 - Ejecutas:
     python -m venv venv
     .\venv\Scripts\activate

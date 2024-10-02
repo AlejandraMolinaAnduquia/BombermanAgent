@@ -1,3 +1,4 @@
+
 import os
 import sys
 
@@ -16,3 +17,4 @@ class FileLoader:
         mapa_invertido = mapa[::-1]
         
         return mapa_invertido
+
