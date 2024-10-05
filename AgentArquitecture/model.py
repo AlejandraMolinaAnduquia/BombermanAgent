@@ -19,10 +19,12 @@ class MazeModel(Model):
         self.grid = MultiGrid(width, height, False)
         self.schedule = RandomActivation(self)
         
+        
         # Cargar el mapa desde el archivo
         file_loader = FileLoader(mapa_filename)
-        self.mapa = file_loader.cargar_mapa()  # Inicializar el mapa aquí
-
+        self.mapa = file_loader.cargar_mapa()  # Cargar el mapa aquí
+        self.mapa = self.mapa[::-1]  # Invertir las filas del mapa
+        
         self.num_comodines = min(num_comodines, self.contar_rocas())  # Limitar la cantidad de comodines al número de rocas
         self.comodines_colocados = 0  # Contador de comodines colocados
         self.salida_colocada = False  # Indica si la RocaSalida ya fue colocada
@@ -46,6 +48,8 @@ class MazeModel(Model):
     def terminar_simulacion(self):
         print("¡Simulación finalizada! Bomberman ha llegado a la salida.")
         self.running = False  # Detener la simulación
+        return
+        
     
     def contar_rocas(self):
         # Contar cuántas rocas hay en el mapa
@@ -81,11 +85,10 @@ class MazeModel(Model):
         self.schedule.step()
 
 
-
-        
     def find_empty_cell(self):
         while True:
             x = self.random.randrange(self.grid.width)
             y = self.random.randrange(self.grid.height)
             if self.grid.is_cell_empty((x, y)):
                 return x, y
+            

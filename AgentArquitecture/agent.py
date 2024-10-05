@@ -1,6 +1,7 @@
 import os
 import sys
 
+
 # Agregar el directorio raíz del proyecto al PYTHONPATH
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -21,41 +22,134 @@ class Bomberman(Agent):
         super().__init__(unique_id, model)
         self.poder_destruccion = poder_destruccion
         self.bomba_activa = False
+        self.stack = []  # Pila para backtracking (camino)
+        self.visited = set()  # Conjunto de celdas visitadas
+        self.objetivo_encontrado = False  # Variable para indicar si Bomberman ya ha encontrado la salida
+       
+    def dfs_step(self):
+        # Si la salida ya fue encontrada, no continuar
+        if self.objetivo_encontrado:
+            return
 
-    def mover(self):
-        possible_steps = self.model.grid.get_neighborhood(self.pos, moore=False, include_center=False)
-        # Filtrar las celdas vacías, celdas de comodines y celdas de salida
-        empty_cells = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell) or 
-                    isinstance(self.model.grid.get_cell_list_contents([cell])[0], Comodin) or
-                    isinstance(self.model.grid.get_cell_list_contents([cell])[0], RocaSalida)]
+        # Si la posición inicial es None, intentar obtener la posición actual del agente desde la grilla
+        if self.pos is None:
+            print("La posición actual es None, tratando de obtener la posición desde la grilla.")
+            self.pos = self.model.grid.find_empty()
         
-        if len(empty_cells) > 0:
-            new_position = self.random.choice(empty_cells)
-            self.model.grid.move_agent(self, new_position)
-            print(f"Bomberman se movió a {self.pos}")
+        # Si no hay más movimientos en la pila, terminamos la búsqueda
+        if not self.stack:
+            # Añadir la posición inicial de Bomberman al stack solo si está definida
+            if self.pos is not None:
+                self.stack.append(self.pos)
+                self.visited.add(self.pos)
+            else:
+                print("Posición actual es None.")
+                return
+
+        current_pos = self.stack[-1]  # Tomar la posición actual (último elemento en la pila)
+
+        # Verificar si la posición está dentro de los límites antes de intentar acceder a la celda
+        if self.model.grid.out_of_bounds(current_pos):
+            print("Posición fuera de los límites:", current_pos)
+            return
+
+        # Si hemos encontrado la salida, terminamos la simulación
+        cell_contents = self.model.grid.get_cell_list_contents([current_pos])
+        if any(isinstance(obj, RocaSalida) for obj in cell_contents):
+            print("Bomberman ha encontrado la salida en:", current_pos)
+            self.objetivo_encontrado = True  # Marcar que la salida ha sido encontrada
+            self.model.terminar_simulacion()  # Terminar la simulación
+            return
+
+        # Obtener celdas vecinas según las prioridades: Arriba, Derecha, Abajo, Izquierda
+        neighbors = self.get_neighbors(current_pos)
+
+        # Buscar la primera celda vecina no visitada que sea un camino válido
+        found_unvisited = False
+        for neighbor in neighbors:
+            if neighbor not in self.visited and self.is_valid_move(neighbor):
+                self.visited.add(neighbor)  # Marcar como visitada
+                self.stack.append(neighbor)  # Añadir a la pila (mover a esa posición)
+                self.model.grid.move_agent(self, neighbor)  # Mover Bomberman en la grilla
+                print(f"Bomberman se movió a {neighbor}")
+                found_unvisited = True
+                break  # Salir del bucle para moverse a la primera posición válida
+
+        # Si no se encontró ninguna celda vecina no visitada, hacer backtracking (volver atrás)
+        if not found_unvisited:
+            self.stack.pop()  # Quitar la última posición de la pila (retroceder)
+            if self.stack:  # Si la pila no está vacía
+                prev_pos = self.stack[-1]
+                self.model.grid.move_agent(self, prev_pos)  # Volver a la posición anterior
+                print(f"Bomberman vuelve atrás a {prev_pos}")
+
+    def get_neighbors(self, pos):
+        x, y = pos
+        # Orden de prioridades: Arriba(realmente es abajo solo que tenemos que tener en cuenta que el mapa esta invertido),
+        # Derecha, Abajo(realmente es arriba por la misma razón), Izquierda
+        neighbors = [(x, y + 1), (x + 1, y), (x, y - 1), (x - 1, y)]
+        return neighbors
+
+    def is_valid_move(self, pos):
+        # Verificar si el movimiento es válido: debe ser camino (C) o salida (R_s)
+        if self.model.grid.out_of_bounds(pos):
+            return False
+        contents = self.model.grid.get_cell_list_contents([pos])
+        return all(not isinstance(obj, (Roca, Metal)) for obj in contents)
+
+    def step(self):
+        # Verificar si la simulación sigue en ejecución
+        if not self.model.running:
+            return
+        
+        # Llamar a un solo paso del DFS en cada step del simulador
+        self.dfs_step()
+        
+        # Verificar si Bomberman ha llegado a la salida
+        if self.has_reached_exit():
+            self.model.terminar_simulacion()
             
-            # Verificar si se ha movido a una roca de salida
-            if any(isinstance(obj, RocaSalida) for obj in self.model.grid.get_cell_list_contents([self.pos])):
-                print("Bomberman ha alcanzado la salida. Simulación finalizada.")
-                self.model.terminar_simulacion()  # Llamar a la función para terminar la simulación
+
+    def has_reached_exit(self):
+        # Verificar si la posición actual contiene la salida
+        cell_contents = self.model.grid.get_cell_list_contents([self.pos])
+        return any(isinstance(obj, RocaSalida) for obj in cell_contents)
 
 
-    def colocar_bomba(self):
-        if not self.bomba_activa:
-            # Verificar si la celda actual contiene un comodín
-            celda_actual = self.model.grid.get_cell_list_contents([self.pos])
-            if any(isinstance(obj, Comodin) for obj in celda_actual):
-                print(f"No se puede colocar bomba en {self.pos} porque hay un comodín.")
-                return  # No colocar la bomba si hay un comodín en la celda
+    # def colocar_bomba(self):
+        
+    #     if self.bomba_activa:
+    #         return False
 
-            # Si no hay comodín, se puede colocar la bomba
-            bomba = Bomba(self.pos, self.model, self.poder_destruccion, self)
-            self.model.grid.place_agent(bomba, self.pos)
-            self.model.schedule.add(bomba)
-            self.bomba_activa = True
-            print(f"Bomba colocada en {self.pos} con timer {bomba.timer}")
-        else:
-            print("No se puede colocar otra bomba hasta que la actual explote.")
+    #     if self.pos is None:
+    #         return False
+
+    #     vecinos = [(self.pos[0]+dx, self.pos[1]+dy) for dx, dy in [(0,1), (1,0), (0,-1), (-1,0)]]
+    #     vecinos = [v for v in vecinos if not self.model.grid.out_of_bounds(v)]
+        
+    #     hay_roca = False
+    #     for vecino in vecinos:
+    #         contenido = self.model.grid.get_cell_list_contents([vecino])
+    #         if any(isinstance(obj, Roca) for obj in contenido):
+    #             hay_roca = True
+    #             break
+        
+    #     if not hay_roca:
+    #         return False
+
+    #     self.bomba_posicion = self.pos
+    #     celda_segura = self.encontrar_celda_segura()
+        
+    #     if celda_segura:
+    #         self.bomba_activa = True
+    #         bomba = Bomba(self.bomba_posicion, self.model, self.poder_destruccion, self)
+    #         self.model.grid.place_agent(bomba, self.bomba_posicion)
+    #         self.model.schedule.add(bomba)
+    #         self.model.grid.move_agent(self, celda_segura)
+    #         return True
+        
+    #     self.bomba_posicion = None
+    #     return False
 
 
     def recoger_comodin(self):
@@ -69,12 +163,6 @@ class Bomberman(Agent):
                 print(f"Bomberman ha recogido un comodín. Poder de destrucción incrementado a {self.poder_destruccion}.")
                 break
 
-            
-    def step(self):
-        self.mover()
-        if random.random() < 0.1:
-            self.colocar_bomba()
-        self.recoger_comodin()
 
 class Explosion(Agent):
     def __init__(self, pos, model, duration):
@@ -89,19 +177,20 @@ class Explosion(Agent):
             if isinstance(obj, Bomberman):
                 print(f"Bomberman fue alcanzado por la explosión en {self.pos}. Simulación terminada.")
                 self.model.terminar_simulacion()  # Terminar la simulación si Bomberman es alcanzado
-
+                return  # Detener la explosión si Bomberman es alcanzado
+            
         self.duration -= 1
         if self.duration <= 0:
             self.model.grid.remove_agent(self)
             self.model.schedule.remove(self)
             
 class Bomba(Agent):
-    def __init__(self, pos, model, poder_destruccion, bomberman):
+    def __init__(self, pos, model, poder_destruccion, Bomberman):
         super().__init__(pos, model)
         self.pos = pos
         self.timer = poder_destruccion + 2  # Temporizador de la bomba
         self.poder_destruccion = poder_destruccion
-        self.bomberman = bomberman  # Referencia al Bomberman que colocó la bomba
+        self.Bomberman = Bomberman  # Referencia al Bomberman que colocó la bomba
 
     def step(self):
         self.timer -= 1
@@ -111,71 +200,55 @@ class Bomba(Agent):
             self.explotar()
             self.model.grid.remove_agent(self)  # Eliminar la bomba del grid
             self.model.schedule.remove(self)  # Eliminar la bomba del schedule
-            self.bomberman.bomba_activa = False  # Permitir que el Bomberman coloque otra bomba
+            self.Bomberman.bomba_activa = False  # Permitir que el Bomberman coloque otra bomba
 
     def explotar(self):
-        if self.pos is not None:
-            x, y = self.pos  # Obtener la posición de la bomba
-            # Lógica para destruir rocas en las direcciones cardinales
-            for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:  # Explosión en las 4 direcciones
-                for alcance in range(1, self.poder_destruccion + 1):
-                    vecino_x, vecino_y = x + dx * alcance, y + dy * alcance
-                    if self.model.grid.out_of_bounds((vecino_x, vecino_y)):
-                        break  # Salir si la celda está fuera de los límites
-                    vecinos = self.model.grid.get_cell_list_contents((vecino_x, vecino_y))
+        if self.pos is None:
+            return
 
-                    # Detener la explosión si se encuentra con metal
-                    if any(isinstance(obj, Metal) for obj in vecinos):
+        x, y = self.pos
+        # Variable para controlar si ya se creó una salida
+        salida_creada = any(isinstance(agente, RocaSalida) for agente in self.model.schedule.agents)
+
+        for dx, dy in [(1,0), (-1,0), (0,1), (0,-1)]:
+            for alcance in range(1, self.poder_destruccion + 1):
+                vecino_pos = (x + dx * alcance, y + dy * alcance)
+                
+                if self.model.grid.out_of_bounds(vecino_pos):
+                    break
+
+                vecinos = self.model.grid.get_cell_list_contents(vecino_pos)
+                
+                if any(isinstance(obj, Metal) for obj in vecinos):
+                    break
+                
+                if any(isinstance(obj, Bomberman) for obj in vecinos):
+                    print(f"Bomberman fue alcanzado por la explosión en {vecino_pos}")
+                    self.model.terminar_simulacion(victoria=False)
+                    return
+
+                for obj in vecinos:
+                    if isinstance(obj, Roca):
+                        self.model.grid.remove_agent(obj)
+                        print(f"Roca destruida en {vecino_pos}")
+                        
+                        # Crear salida solo si aún no existe una
+                        if not salida_creada and random.random() < 0.1:
+                            roca_salida = RocaSalida(vecino_pos, self.model)
+                            self.model.grid.place_agent(roca_salida, vecino_pos)
+                            self.model.schedule.add(roca_salida)
+                            salida_creada = True
+                            print(f"Salida creada en {vecino_pos}")
+                        elif self.model.comodines_colocados < self.model.num_comodines:
+                            comodin = Comodin(vecino_pos, self.model)
+                            self.model.grid.place_agent(comodin, vecino_pos)
+                            self.model.schedule.add(comodin)
+                            self.model.comodines_colocados += 1
                         break
 
-                    # Si hay un comodín, la explosión sigue sin afectarlo
-                    if any(isinstance(obj, Comodin) for obj in vecinos):
-                        print(f"Explosión ignoró el comodín en ({vecino_x}, {vecino_y})")
-                        continue  # La explosión continúa su camino sin afectar el comodín
-
-                    # No afectar la RocaSalida
-                    if any(isinstance(obj, RocaSalida) for obj in vecinos):
-                        print(f"Explosión ignoró la roca de salida en ({vecino_x}, {vecino_y})")
-                        continue  # La explosión no afecta a la roca de salida
-
-                    # Detectar si Bomberman es alcanzado
-                    for obj in vecinos:
-                        if isinstance(obj, Bomberman):
-                            print(f"Bomberman fue alcanzado por la explosión en ({vecino_x}, {vecino_y}). Simulación terminada.")
-                            self.model.terminar_simulacion()  # Llamar a la función para terminar la simulación
-                            return  # Detener la explosión y la simulación
-
-                    # Destruir rocas
-                    for obj in vecinos:
-                        if isinstance(obj, Roca):
-                            print(f"Roca destruida en ({vecino_x}, {vecino_y})")
-                            self.model.grid.remove_agent(obj)  # Eliminar la roca del grid
-                            
-                            # Colocar una RocaSalida aleatoriamente
-                            if random.random() < 0.1:  # 10% de probabilidad de crear RocaSalida
-                                roca_salida = RocaSalida((vecino_x, vecino_y), self.model)
-                                self.model.grid.place_agent(roca_salida, (vecino_x, vecino_y))
-                                self.model.schedule.add(roca_salida)
-                                print(f"Roca de salida colocada en ({vecino_x}, {vecino_y})")
-                                break  # No colocar comodín si se coloca una salida
-
-                            # Colocar un comodín si no hay salida
-                            if self.model.comodines_colocados < self.model.num_comodines:
-                                comodin = Comodin((vecino_x, vecino_y), self.model)
-                                self.model.grid.place_agent(comodin, (vecino_x, vecino_y))
-                                self.model.schedule.add(comodin)
-                                self.model.comodines_colocados += 1
-                                print(f"Comodín colocado en ({vecino_x}, {vecino_y})")
-                            break  # Detener la explosión en esta dirección después de destruir la roca
-                    else:
-                        # Si no hay roca ni metal, continuar la explosión
-                        print(f"Explosión alcanzó ({vecino_x}, {vecino_y})")
-                        explosion = Explosion((vecino_x, vecino_y), self.model, duration=1)  # Pintar por 1 paso
-                        self.model.grid.place_agent(explosion, (vecino_x, vecino_y))
-                        self.model.schedule.add(explosion)
-                        continue  # Continuar con el siguiente alcance en la misma dirección
-
-                    break  # Detenerse al encontrar una roca o metal en la dirección actual
+                explosion = Explosion(vecino_pos, self.model, duration=1)
+                self.model.grid.place_agent(explosion, vecino_pos)
+                self.model.schedule.add(explosion)
 
 
 
