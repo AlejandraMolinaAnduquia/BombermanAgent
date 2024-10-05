@@ -15,13 +15,14 @@ from Controllers.fileLoad import FileLoader
 import random
 
 class MazeModel(Model):
-    def __init__(self, width, height, num_bombermans, num_comodines, mapa_filename):
+    def __init__(self, width, height, num_bombermans, num_comodines, mapa_filename, recorrido_tipo):
         self.grid = MultiGrid(width, height, False)
         self.schedule = RandomActivation(self)
         
         # Cargar el mapa desde el archivo
         file_loader = FileLoader(mapa_filename)
         self.mapa = file_loader.cargar_mapa()  # Inicializar el mapa aquí
+        self.recorrido_tipo = recorrido_tipo
 
         self.num_comodines = min(num_comodines, self.contar_rocas())  # Limitar la cantidad de comodines al número de rocas
         self.comodines_colocados = 0  # Contador de comodines colocados
@@ -79,11 +80,14 @@ class MazeModel(Model):
     def step(self):
         # Avanzar un paso en la simulación
         self.schedule.step()
+        # Aquí puedes imprimir para verificar que se están dando los pasos
+        print("Modelo avanzado en un paso.")
+
 
     def find_exit(self):
         for y, row in enumerate(self.mapa):
             for x, cell in enumerate(row):
-                if cell == 'R_s':  # Asumo que 'R_s' indica la salida en el mapa
+                if cell == 'R_s':  # 'R_s' indica la salida en el mapa
                     return (x, y)
         return None  # Si no se encuentra la salida
 
