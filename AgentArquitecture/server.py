@@ -56,7 +56,7 @@ def contar_rocas_en_mapa(mapa_filename):
     return temp_model.contar_rocas()
 
 # Cargar el número de rocas del mapa seleccionado
-mapa_filename = "Data/Maps/mapa3.txt"
+mapa_filename = "Data/Maps/mapa1.txt"
 max_comodines = contar_rocas_en_mapa(mapa_filename)
 
 # Crear el menú desplegable con las opciones para el tipo de recorrido
