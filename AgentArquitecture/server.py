@@ -2,7 +2,7 @@ import os
 import sys
 # Agregar el directorio raíz del proyecto al PYTHONPATH
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from mesa.visualization.modules import CanvasGrid
+from mesa.visualization.modules import CanvasGrid, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
 from mesa.visualization.UserParam import Choice  # Importar Choice para el botón desplegable
 from mesa.visualization.UserParam import Slider  # Importar Slider para la interfaz
@@ -20,6 +20,7 @@ def agent_portrayal(agent):
     elif isinstance(agent, RocaSalida):
         portrayal["Shape"] = "Data/imagenes/salida.png"  # Imagen de la roca con salida
         portrayal["scale"] = 1
+        portrayal["Text"] = "Salida"
         portrayal["Layer"] = 1
 
     elif isinstance(agent, Metal):
@@ -68,16 +69,32 @@ recorrido_selector = Choice(
 # Crear la grilla donde se representarán los agentes
 grid = CanvasGrid(agent_portrayal, 7, 4, 500, 500)
 
-# Configurar el servidor con sliders dinámicos basados en el número de rocas
+
+
+# Definir un nuevo TextElement para mostrar la lista de celdas visitadas y la pila
+class DFSStateElement(TextElement):
+    def render(self, model):
+        bomberman = next(agent for agent in model.schedule.agents if isinstance(agent, Bomberman))
+        visited = list(bomberman.visited)
+        stack = bomberman.stack
+        
+        # Mostrar la información en formato legible
+        return f"Visitados: {visited}\nPila: {stack}"
+    
+
+# Agregar el nuevo módulo TextElement para la visualización de la lista de celdas visitadas y la pila
+dfs_state_element = DFSStateElement()
+
+# Configurar el servidor para incluir la nueva visualización y selección de algoritmo
 server = ModularServer(
     MazeModel,
-    [grid],
+    [grid, dfs_state_element],
     "Bomberman Maze",
     {
         "width": 7,
         "height": 4,
         "num_bombermans": Slider("Número de Bombermans", 1, 1, 5, 1),
-        "num_comodines": Slider("Número de Comodines", 1, 1, max_comodines-1, 1),
+        "num_comodines": Slider("Número de Comodines", 1, 1, max_comodines - 1, 1),
         "mapa_filename": mapa_filename,
         "recorrido_tipo": recorrido_selector
     }

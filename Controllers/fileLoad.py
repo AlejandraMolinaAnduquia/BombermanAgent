@@ -14,7 +14,8 @@ class FileLoader:
             mapa = [line.strip().split(',') for line in file.readlines()]
             
         # Invertir las filas del mapa
-        mapa_invertido = mapa[::-1]
+        #mapa_invertido = mapa[::-1]
         
-        return mapa_invertido
+        #return mapa_invertido
+        return mapa
 
