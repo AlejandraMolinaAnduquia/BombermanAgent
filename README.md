@@ -15,5 +15,3 @@ Empieza el proyecto:
     python AgentArquitecture/archivo.py
 - Desactivar entorno:
     desactive
-
-2.

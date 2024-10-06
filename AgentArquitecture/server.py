@@ -4,6 +4,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mesa.visualization.modules import CanvasGrid, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
+from mesa.visualization.UserParam import Choice  # Importar Choice para el botón desplegable
 from mesa.visualization.UserParam import Slider  # Importar Slider para la interfaz
 from model import *
 
@@ -51,12 +52,19 @@ def agent_portrayal(agent):
 
 # Crear un modelo temporal para contar las rocas del mapa
 def contar_rocas_en_mapa(mapa_filename):
-    temp_model = MazeModel(width=7, height=4, num_bombermans=1, num_comodines=0, mapa_filename=mapa_filename)
+    temp_model = MazeModel(width=7, height=4, num_bombermans=1, num_comodines=0, mapa_filename=mapa_filename, recorrido_tipo=None)
     return temp_model.contar_rocas()
 
 # Cargar el número de rocas del mapa seleccionado
 mapa_filename = "Data/Maps/mapa3.txt"
 max_comodines = contar_rocas_en_mapa(mapa_filename)
+
+# Crear el menú desplegable con las opciones para el tipo de recorrido
+recorrido_selector = Choice(
+    "Algoritmo de recorrido", 
+    value="Anchura (BFS)",  # Opción por defecto
+    choices=["Anchura (BFS)", "Profundidad (DFS)", "Costo uniforme"]
+)
 
 # Crear la grilla donde se representarán los agentes
 grid = CanvasGrid(agent_portrayal, 7, 4, 500, 500)
@@ -87,7 +95,8 @@ server = ModularServer(
         "height": 4,
         "num_bombermans": Slider("Número de Bombermans", 1, 1, 5, 1),
         "num_comodines": Slider("Número de Comodines", 1, 1, max_comodines - 1, 1),
-        "mapa_filename": mapa_filename
+        "mapa_filename": mapa_filename,
+        "recorrido_tipo": recorrido_selector
     }
 )
 
