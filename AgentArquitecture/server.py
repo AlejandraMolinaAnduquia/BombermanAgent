@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mesa.visualization.modules import CanvasGrid, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
-from mesa.visualization.UserParam import Slider
+from mesa.visualization.UserParam import Slider  # Importar Slider para la interfaz
 from model import *
 
 

@@ -1,3 +1,5 @@
+from collections import deque
+from model import *
 import os
 import sys
 
@@ -163,7 +165,6 @@ class Bomberman(Agent):
                 print(f"Bomberman ha recogido un comodín. Poder de destrucción incrementado a {self.poder_destruccion}.")
                 break
 
-
 class Explosion(Agent):
     def __init__(self, pos, model, duration):
         super().__init__(pos, model)
@@ -250,11 +251,7 @@ class Bomba(Agent):
                 self.model.grid.place_agent(explosion, vecino_pos)
                 self.model.schedule.add(explosion)
 
-
-
-            
-
-
+      
 class Roca(Agent):
     def __init__(self, pos, model):
         super().__init__(pos, model)
