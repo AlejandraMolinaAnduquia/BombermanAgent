@@ -56,7 +56,7 @@ def contar_rocas_en_mapa(mapa_filename):
     return temp_model.contar_rocas()
 
 # Cargar el número de rocas del mapa seleccionado
-mapa_filename = "Data/Maps/mapa3.txt"
+mapa_filename = "Data/Maps/mapa1.txt"
 max_comodines = contar_rocas_en_mapa(mapa_filename)
 
 # Crear el menú desplegable con las opciones para el tipo de recorrido
@@ -68,7 +68,6 @@ recorrido_selector = Choice(
 
 # Crear la grilla donde se representarán los agentes
 grid = CanvasGrid(agent_portrayal, 7, 4, 500, 500)
-
 
 
 # Definir un nuevo TextElement para mostrar la lista de celdas visitadas y la pila
