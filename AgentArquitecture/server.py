@@ -70,7 +70,6 @@ recorrido_selector = Choice(
 grid = CanvasGrid(agent_portrayal, 7, 4, 500, 500)
 
 
-
 # Definir un nuevo TextElement para mostrar la lista de celdas visitadas y la pila
 class DFSStateElement(TextElement):
     def render(self, model):
