@@ -13,23 +13,23 @@ def agent_portrayal(agent):
     portrayal = {}
 
     if isinstance(agent, Roca):
-        portrayal["Shape"] = "Data/imagenes/roca.png"  # Ruta a la imagen de la roca
+        portrayal["Shape"] = "Data/imagenes/roca.jpg"  # Ruta a la imagen de la roca
         portrayal["scale"] = 1  # Escala de la imagen
         portrayal["Layer"] = 1
 
     elif isinstance(agent, RocaSalida):
-        portrayal["Shape"] = "Data/imagenes/salida.png"  # Imagen de la roca con salida
+        portrayal["Shape"] = "Data/imagenes/salida.jpg"  # Imagen de la roca con salida
         portrayal["scale"] = 1
         portrayal["Text"] = "Salida"
         portrayal["Layer"] = 1
 
     elif isinstance(agent, Metal):
-        portrayal["Shape"] = "Data/imagenes/metal.jpg"  # Imagen de metal
+        portrayal["Shape"] = "Data/imagenes/muro.jpg"
         portrayal["scale"] = 1
         portrayal["Layer"] = 1
 
     elif isinstance(agent, Bomberman):
-        portrayal["Shape"] = "Data/imagenes/bomberman.png"  # Imagen de Bomberman
+        portrayal["Shape"] = "Data/imagenes/bomberman.jpg"  # Imagen de Bomberman
         portrayal["scale"] = 1
         portrayal["Layer"] = 2
 
@@ -39,7 +39,7 @@ def agent_portrayal(agent):
         portrayal["Layer"] = 3
 
     elif isinstance(agent, Comodin):
-        portrayal["Shape"] = "Data/imagenes/fuego.png"  # Imagen de comodín
+        portrayal["Shape"] = "Data/imagenes/fuego.png"  # Imagen de animación
         portrayal["scale"] = 0.5
         portrayal["Layer"] = 2
 
@@ -50,14 +50,23 @@ def agent_portrayal(agent):
 
     return portrayal
 
+# Leer el tamaño del mapa desde el archivo de mapa
+def obtener_dimensiones_mapa(mapa_filename):
+    with open(mapa_filename, 'r') as f:
+        mapa = [line.strip().split(',') for line in f.readlines()]
+    height = len(mapa)
+    width = len(mapa[0]) if height > 0 else 0
+    return width, height
+
 # Crear un modelo temporal para contar las rocas del mapa
 def contar_rocas_en_mapa(mapa_filename):
-    temp_model = MazeModel(width=7, height=4, num_bombermans=1, num_comodines=0, mapa_filename=mapa_filename, recorrido_tipo=None)
-    return temp_model.contar_rocas()
+    width, height = obtener_dimensiones_mapa(mapa_filename)
+    temp_model = MazeModel(width=width, height=height, num_bombermans=1, num_comodines=0, mapa_filename=mapa_filename, recorrido_tipo=None)
+    return temp_model.contar_rocas(), width, height
 
-# Cargar el número de rocas del mapa seleccionado
+# Cargar el número de rocas del mapa seleccionado y las dimensiones
 mapa_filename = "Data/Maps/mapa1.txt"
-max_comodines = contar_rocas_en_mapa(mapa_filename)
+max_comodines, width, height = contar_rocas_en_mapa(mapa_filename)
 
 # Crear el menú desplegable con las opciones para el tipo de recorrido
 recorrido_selector = Choice(
@@ -66,9 +75,8 @@ recorrido_selector = Choice(
     choices=["Anchura (BFS)", "Profundidad (DFS)", "Costo uniforme"]
 )
 
-# Crear la grilla donde se representarán los agentes
-grid = CanvasGrid(agent_portrayal, 7, 4, 500, 500)
-
+# Crear la grilla donde se representarán los agentes, usando las dimensiones del mapa
+grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 
 # Definir un nuevo TextElement para mostrar la lista de celdas visitadas y la pila
 class DFSStateElement(TextElement):
@@ -90,8 +98,8 @@ server = ModularServer(
     [grid, dfs_state_element],
     "Bomberman Maze",
     {
-        "width": 7,
-        "height": 4,
+        "width": width,
+        "height": height,
         "num_bombermans": Slider("Número de Bombermans", 1, 1, 5, 1),
         "num_comodines": Slider("Número de Comodines", 1, 1, max_comodines - 1, 1),
         "mapa_filename": mapa_filename,
