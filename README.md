@@ -1,17 +1,38 @@
-# BombermanAgent
-Para el presente proyecto el personaje será un agente inteligente el cual debe hacer todo lo posible por encontrar la salida del laberinto.
+# Bomberman Simulation with the Mesa Framework
 
-Empieza el proyecto:
+Make sure you have Python 3.12.6 installed (with the path activated) and the virtualenv library.
 
-1. Entorno virtualizado:
-- Te paras en la carpeta donde vas a desarrollar tu proyecto
+# Correr en la terminal o consola:
+### 1. Crear el entorno virtual de mesa
 
-- Ejecutas:
-    python -m venv venv
-    .\venv\Scripts\activate
-    pip install mesa
-    pip show mesa
-- Verificación:
-    python AgentArquitecture/archivo.py
-- Desactivar entorno:
-    desactive
+```bash
+virtualenv venv
+```
+
+### 2. Activar el etorno virtual
+
+-----------------------------
+
+In bash:
+```bash
+source venv/Scripts/activate
+```
+
+In cmd:
+```cmd
+.\venv\Scripts\activate
+```
+
+-----------------------------
+
+### 3. Instalar la librerias / requerimientos necesarias
+
+```bash
+pip install -r "requirements.txt"
+```
+
+### 4. Correr el programa
+
+```bash
+python main.py
+```

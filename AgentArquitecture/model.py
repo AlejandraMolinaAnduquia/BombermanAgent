@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mesa import Model
 from mesa.space import MultiGrid
 from mesa.time import RandomActivation
-from agent import Bomberman, Roca, RocaSalida, Metal, Bomba, Comodin, Explosion
+from AgentArquitecture.bomberman import Bomberman, Roca, RocaSalida, Metal, Bomba, Comodin, Explosion
 from Controllers.fileLoad import FileLoader
 
 
