@@ -81,7 +81,7 @@ grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 # Definir un nuevo TextElement para mostrar la lista de celdas visitadas y la pila
 class DFSStateElement(TextElement):
     def render(self, model):
-        bomberman = next(agent for agent in model.schedule.agents if isinstance(agent, Bomberman))
+        bomberman = next(agent for agent in model.schedule.AgentArquitecture if isinstance(agent, Bomberman))
         visited = list(bomberman.visited)
         stack = bomberman.stack
         

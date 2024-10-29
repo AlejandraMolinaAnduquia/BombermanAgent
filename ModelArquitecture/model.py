@@ -5,10 +5,10 @@ from factories.agent_factory import AgentFactory
 from searches.uninformed_searchs.dfs import DFS
 from searches.uninformed_searchs.bfs import BFS
 from searches.uninformed_searchs.uniform_cost import UniformCostSearch
-from agents.bomberman import BombermanAgent
-from agents.goal import GoalAgent
+from AgentArquitecture.bomberman import BombermanAgent
+from AgentArquitecture.goal import GoalAgent
 
-class LabyrinthModel(Model):
+class MazeModel(Model):
     def __init__(self, width, height, map, search_strategy):
         self.grid = MultiGrid(width, height, True)
         self.schedule = RandomActivation(self)

@@ -1,5 +1,5 @@
 from mesa import Agent
-from agents.road import RoadAgent
+from AgentArquitecture.road import RoadAgent
 
 class BombermanAgent(Agent):
     def __init__(self, unique_id, model, search_trategy):
@@ -29,8 +29,8 @@ class BombermanAgent(Agent):
                 self.model.grid.move_agent(self, next_pos)
 
     def visit_cell(self):
-        agents_in_position = self.model.grid.get_cell_list_contents([self.pos])
-        for agent in agents_in_position:
+        AgentArquitecture_in_position = self.model.grid.get_cell_list_contents([self.pos])
+        for agent in AgentArquitecture_in_position:
             if isinstance(agent, RoadAgent):
                 agent.is_visited = True
                 break

@@ -3,15 +3,15 @@ from mesa.visualization.modules import CanvasGrid
 from mesa.visualization import Choice
 from mesa.visualization.UserParam import Slider  
 
-#Import agents
-from agents.bomberman import BombermanAgent
-from agents.goal import GoalAgent
-from agents.metal import MetalAgent
-from agents.road import RoadAgent
-from agents.rock import RockAgent
+#Import AgentArquitecture
+from AgentArquitecture.bomberman import BombermanAgent
+from AgentArquitecture.goal import GoalAgent
+from AgentArquitecture.metal import MetalAgent
+from AgentArquitecture.road import RoadAgent
+from AgentArquitecture.rock import RockAgent
 
 #Import model
-from environment.labyrinth import LabyrinthModel
+from ModelArquitecture.model import MazeModel
 
 def agent_portrayal(agent):
     if agent is None:
@@ -24,13 +24,13 @@ def agent_portrayal(agent):
     }
 
     if type(agent) is BombermanAgent:
-        portrayal["Shape"] = "assets/images/bomberman.jpg"
+        portrayal["Shape"] = "Data/Images/bomberman.jpg"
         portrayal["Layer"] = 1
     elif type(agent) is GoalAgent:
-        portrayal["Shape"] = "assets/images/goal.jpg"
+        portrayal["Shape"] = "Data/Images/goal.jpg"
         portrayal["Layer"] = 0
     elif type(agent) is MetalAgent:
-        portrayal["Shape"] = "assets/images/muro.jpg"
+        portrayal["Shape"] = "Data/Images/muro.jpg"
         portrayal["Color"] = "gray"
         portrayal["r"] = 1
         portrayal["Layer"] = 1
@@ -69,6 +69,6 @@ def create_server(map):
         )
     }
 
-    server = ModularServer(LabyrinthModel, [grid], "Bomberman", params)
+    server = ModularServer(MazeModel, [grid], "Bomberman", params)
     server.port = 8521
     return server

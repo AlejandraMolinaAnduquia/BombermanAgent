@@ -1,6 +1,6 @@
 from searches.search_strategy import SearchStrategy
-from agents.goal import GoalAgent
-from agents.road import RoadAgent
+from AgentArquitecture.goal import GoalAgent
+from AgentArquitecture.road import RoadAgent
 import heapq
 
 class UniformCostSearch(SearchStrategy):
@@ -23,8 +23,8 @@ class UniformCostSearch(SearchStrategy):
 
         current_cost, _, current, path = heapq.heappop(self.priority_queue)
 
-        agents_in_cell = agent.model.grid[current[0]][current[1]]
-        if any(isinstance(a, GoalAgent) for a in agents_in_cell):
+        AgentArquitecture_in_cell = agent.model.grid[current[0]][current[1]]
+        if any(isinstance(a, GoalAgent) for a in AgentArquitecture_in_cell):
             agent.path_to_exit = path
             agent.has_explored = True
             return None
@@ -54,8 +54,8 @@ class UniformCostSearch(SearchStrategy):
                     and 0 <= new_y < agent.model.grid.height
                     and new_position not in self.visited
                 ):
-                    agents_in_new_cell = agent.model.grid[new_x][new_y]
-                    if all(isinstance(a, (RoadAgent, GoalAgent)) for a in agents_in_new_cell):
+                    AgentArquitecture_in_new_cell = agent.model.grid[new_x][new_y]
+                    if all(isinstance(a, (RoadAgent, GoalAgent)) for a in AgentArquitecture_in_new_cell):
                         new_cost = current_cost + (13 if is_diagonal else 10)
                         if new_position not in self.cost_so_far or new_cost < self.cost_so_far[new_position]:
                             self.cost_so_far[new_position] = new_cost

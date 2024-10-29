@@ -1,9 +1,9 @@
-#Agents import
-from agents.bomberman import BombermanAgent
-from agents.goal import GoalAgent
-from agents.metal import MetalAgent
-from agents.road import RoadAgent
-from agents.rock import RockAgent
+#AgentArquitecture import
+from AgentArquitecture.bomberman import BombermanAgent
+from AgentArquitecture.goal import GoalAgent
+from AgentArquitecture.metal import MetalAgent
+from AgentArquitecture.road import RoadAgent
+from AgentArquitecture.rock import RockAgent
 
 class AgentFactory:
     @staticmethod
