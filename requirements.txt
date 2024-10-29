@@ -46,7 +46,7 @@ Mesa-Viz-Tornado==0.1.3
 nbformat==5.10.4
 nest-asyncio==1.6.0
 networkx==3.3
-numpy==2.1.1
+numpy==2.1.2
 packaging==24.1
 pandas==2.2.3
 parso==0.8.4

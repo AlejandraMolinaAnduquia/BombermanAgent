@@ -1,6 +1,6 @@
 import sys
-from utils.utils import load_map, get_map_path
-from server.server import create_server
+from Utils.dinamicTools import load_map, get_map_path
+from ServerArquitecture.server import create_server
 
 if __name__ == "__main__":
     map_path = get_map_path()

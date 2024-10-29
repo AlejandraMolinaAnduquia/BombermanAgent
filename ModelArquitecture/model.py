@@ -1,10 +1,10 @@
 from mesa import Model
 from mesa.time import RandomActivation
 from mesa.space import MultiGrid
-from factories.agent_factory import AgentFactory
-from searches.uninformed_searchs.dfs import DFS
-from searches.uninformed_searchs.bfs import BFS
-from searches.uninformed_searchs.uniform_cost import UniformCostSearch
+from IdentityArquitecture.agents import AgentFactory
+from SearchesArquitecture.UninformedSearches.dfs import dfs
+from SearchesArquitecture.UninformedSearches.bfs import bfs
+from SearchesArquitecture.UninformedSearches.ucs import ucs
 from AgentArquitecture.bomberman import BombermanAgent
 from AgentArquitecture.goal import GoalAgent
 
@@ -14,11 +14,11 @@ class MazeModel(Model):
         self.schedule = RandomActivation(self)
 
         if search_strategy == "DFS":
-            search_strategy = DFS()
+            search_strategy = dfs()
         elif search_strategy == "BFS":
-            search_strategy = BFS()
+            search_strategy = bfs()
         elif search_strategy == "UCS":
-            search_strategy = UniformCostSearch()
+            search_strategy = ucs()
 
         for y, row in enumerate(map):
             for x, cell in enumerate(row):
@@ -42,7 +42,7 @@ class MazeModel(Model):
                     bomberman = AgentFactory.create_agent("bomberman", (x, y), self, search_strategy)
                     self.grid.place_agent(bomberman, (x, y))
                     self.schedule.add(bomberman)
-                elif cell == "C_m":
+                elif cell == "R_s":
                     goal = AgentFactory.create_agent("goal", (x, y), self)
                     self.grid.place_agent(goal, (x, y))
                     self.schedule.add(goal)

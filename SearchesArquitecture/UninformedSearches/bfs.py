@@ -1,9 +1,9 @@
 from collections import deque
-from searches.search_strategy import SearchStrategy
+from SearchesArquitecture.searchStrategy import SearchStrategy
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.road import RoadAgent
 
-class BFS(SearchStrategy):
+class bfs(SearchStrategy):
     def __init__(self):
         self.queue = deque()
         self.visited = set()

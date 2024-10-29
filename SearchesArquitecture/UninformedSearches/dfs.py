@@ -1,8 +1,8 @@
-from searches.search_strategy import SearchStrategy
+from SearchesArquitecture.searchStrategy import SearchStrategy
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.road import RoadAgent
 
-class DFS(SearchStrategy):
+class dfs(SearchStrategy):
     def __init__(self):
         self.stack = []
         self.visited = set()

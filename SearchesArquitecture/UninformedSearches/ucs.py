@@ -1,9 +1,9 @@
-from searches.search_strategy import SearchStrategy
+from SearchesArquitecture.searchStrategy import SearchStrategy
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.road import RoadAgent
 import heapq
 
-class UniformCostSearch(SearchStrategy):
+class ucs(SearchStrategy):
     def __init__(self):
         self.priority_queue = []
         self.visited = set()
