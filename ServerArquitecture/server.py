@@ -9,8 +9,8 @@ from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.metal import MetalAgent
 from AgentArquitecture.road import RoadAgent
 from AgentArquitecture.rock import RockAgent
+from AgentArquitecture.globe import GlobeAgent
 
-#Import model
 from ModelArquitecture.model import MazeModel
 
 def agent_portrayal(agent):
@@ -27,7 +27,7 @@ def agent_portrayal(agent):
         portrayal["Shape"] = "Data/Images/bomberman.jpg"
         portrayal["Layer"] = 1
     elif type(agent) is GoalAgent:
-        portrayal["Shape"] = "Data/Images/goal.jpg"
+        portrayal["Shape"] = "Data/Images/salida.jpg"
         portrayal["Layer"] = 0
     elif type(agent) is MetalAgent:
         portrayal["Shape"] = "Data/Images/muro.jpg"
@@ -39,16 +39,19 @@ def agent_portrayal(agent):
             portrayal["text"] = str(agent.visit_order)
             portrayal["text_color"] = "black" 
         if agent.is_visited:
-            portrayal["Color"] = "red"
+            portrayal["Color"] = "yellow"
         else:
             portrayal["Color"] = "green"
         portrayal["Shape"] = "rect"
         portrayal["r"] = 1
         portrayal["Layer"] = 0
     elif type(agent) is RockAgent:
-        portrayal["Shape"] = "rect"
+        portrayal["Shape"] = "Data/Images/roca.jpg"
         portrayal["Color"] = "firebrick"
         portrayal["r"] = 1
+        portrayal["Layer"] = 1
+    elif type(agent) is GlobeAgent:
+        portrayal["Shape"] = "Data/Images/globo.png"
         portrayal["Layer"] = 1
 
     return portrayal

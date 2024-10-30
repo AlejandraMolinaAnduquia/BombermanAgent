@@ -7,9 +7,11 @@ from SearchesArquitecture.UninformedSearches.bfs import bfs
 from SearchesArquitecture.UninformedSearches.ucs import ucs
 from AgentArquitecture.bomberman import BombermanAgent
 from AgentArquitecture.goal import GoalAgent
+from AgentArquitecture.globe import GlobeAgent
 
 class MazeModel(Model):
     def __init__(self, width, height, map, search_strategy):
+        super().__init__()
         self.grid = MultiGrid(width, height, True)
         self.schedule = RandomActivation(self)
 
@@ -46,7 +48,10 @@ class MazeModel(Model):
                     goal = AgentIdentity.create_agent("goal", (x, y), self)
                     self.grid.place_agent(goal, (x, y))
                     self.schedule.add(goal)
-
+                elif cell == "G":
+                    globe = AgentIdentity.create_agent("globe", (x, y), self)
+                    self.grid.place_agent(globe, (x, y))
+                    self.schedule.add(globe)
         self.running = True
 
     def step(self):

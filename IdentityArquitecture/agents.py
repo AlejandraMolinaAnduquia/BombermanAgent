@@ -4,6 +4,7 @@ from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.metal import MetalAgent
 from AgentArquitecture.road import RoadAgent
 from AgentArquitecture.rock import RockAgent
+from AgentArquitecture.globe import GlobeAgent
 
 class AgentIdentity:
     @staticmethod
@@ -18,5 +19,7 @@ class AgentIdentity:
             return RoadAgent(unique_id, model)
         elif type == "rock":
             return RockAgent(unique_id, model)
+        elif type == "globe":
+            return GlobeAgent(unique_id, model)
         else:
             raise ValueError("Invalid agent type")
