@@ -5,7 +5,7 @@ from AgentArquitecture.metal import MetalAgent
 from AgentArquitecture.road import RoadAgent
 from AgentArquitecture.rock import RockAgent
 
-class AgentFactory:
+class AgentIdentity:
     @staticmethod
     def create_agent(type, unique_id, model, search_strategy = None):
         if type == "bomberman":
