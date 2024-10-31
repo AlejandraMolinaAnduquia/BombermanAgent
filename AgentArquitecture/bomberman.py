@@ -8,11 +8,13 @@ class BombermanAgent(Agent):
         self.path_to_exit = []
         self.has_explored = False
         self.is_search_initialized = False
+        self.is_moving = False
 
     def move_to_exit(self):
         if self.path_to_exit:
             next_position = self.path_to_exit.pop(0)
             self.model.grid.move_agent(self, next_position)
+            self.is_moving = True
 
     def step(self):
         self.visit_cell()
@@ -27,6 +29,7 @@ class BombermanAgent(Agent):
             if self.path_to_exit:
                 next_pos = self.path_to_exit.pop(0)
                 self.model.grid.move_agent(self, next_pos)
+                self.move_to_exit()
 
     def visit_cell(self):
         AgentArquitecture_in_position = self.model.grid.get_cell_list_contents([self.pos])
