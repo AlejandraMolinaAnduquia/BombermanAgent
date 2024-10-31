@@ -8,12 +8,14 @@ from SearchesArquitecture.UninformedSearches.ucs import ucs
 from AgentArquitecture.bomberman import BombermanAgent
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.globe import GlobeAgent
+from AgentArquitecture.road import RoadAgent
 
 class MazeModel(Model):
     def __init__(self, width, height, map, search_strategy):
         super().__init__()
         self.grid = MultiGrid(width, height, True)
         self.schedule = RandomActivation(self)
+        self.globe_active = True
 
         if search_strategy == "DFS":
             search_strategy = dfs()
@@ -66,3 +68,7 @@ class MazeModel(Model):
             if bomberman_present and goal_present:
                 self.running = False
                 break
+    
+    def is_cell_empty(self, position):
+        cell_content = self.grid.get_cell_list_contents([position])
+        return all(isinstance(agent, (RoadAgent, GoalAgent)) for agent in cell_content)
