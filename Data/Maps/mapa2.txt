@@ -1,10 +1,10 @@
 C,C,R,C,C,R,C,C,C,R
 C,M,C,M,C,M,C,M,C,R
-R,C,C,C,R_s,C,C,C,M,C
+R,C,C,C,G,C,C,C,M,C
 C,M,C_b,M,C,M,C,C,R,C
 R,C,C,M,C,M,C,C,R,C
-C,M,C,M,C,M,C,M,C,R
+C,M,C,M,C,M,G,M,C,R
 C,C,R,C,C,R,C,C,C,R
 R,C,C,M,C,M,C,C,R,C
-C,M,C,M,C,M,C,C,R,C
-C,C,R,C,C,R,C,C,C,R
+C,M,G,M,C,M,C,C,R,C
+C,C,R,C,C,R,C,C,C,R_s
