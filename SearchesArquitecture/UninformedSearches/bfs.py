@@ -35,7 +35,7 @@ class bfs(SearchStrategy):
                     (0, -1), (-1, -1), (-1, 0), (-1, 1)
                 ]
             else:
-                #directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+                #direcciones = [(0, 1), (1, 0), (0, -1), (-1, 0)]
                 directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 
             for direction in directions:

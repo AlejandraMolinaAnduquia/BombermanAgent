@@ -9,6 +9,7 @@ from AgentArquitecture.bomberman import BombermanAgent
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.globe import GlobeAgent
 from AgentArquitecture.road import RoadAgent
+from SearchesArquitecture.InformedSearches.astar import AStarSearch
 
 class MazeModel(Model):
     def __init__(self, width, height, map, search_strategy):
@@ -16,6 +17,7 @@ class MazeModel(Model):
         self.grid = MultiGrid(width, height, True)
         self.schedule = RandomActivation(self)
         self.globe_active = True
+        self.goal_position = None  # Inicializar la posición objetivo
 
         if search_strategy == "DFS":
             search_strategy = dfs()
@@ -23,6 +25,8 @@ class MazeModel(Model):
             search_strategy = bfs()
         elif search_strategy == "UCS":
             search_strategy = ucs()
+        elif search_strategy == "A*":
+            search_strategy = AStarSearch()
 
         for y, row in enumerate(map):
             for x, cell in enumerate(row):
@@ -50,11 +54,14 @@ class MazeModel(Model):
                     goal = AgentIdentity.create_agent("goal", (x, y), self)
                     self.grid.place_agent(goal, (x, y))
                     self.schedule.add(goal)
+                    self.goal_position = (x, y)  # Asignar la posición del objetivo
+
                 elif cell == "G":
                     globe = AgentIdentity.create_agent("globe", (x, y), self)
                     self.grid.place_agent(globe, (x, y))
                     self.schedule.add(globe)
         self.running = True
+        
 
     def step(self):
         self.schedule.step()
