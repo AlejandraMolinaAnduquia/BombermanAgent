@@ -40,7 +40,7 @@ class ucs(SearchStrategy):
                     (0, -1, False), (-1, -1, True), (-1, 0, False), (-1, 1, True)
                 ]
             else:
-                #directions = [(0, 1, False), (1, 0, False), (0, -1, False), (-1, 0, False)]
+                #direcciones = [(0, 1, False), (1, 0, False), (0, -1, False), (-1, 0, False)]
                 directions = [(-1, 0, False), (0, 1, False), (1, 0, False), (0, -1, False)]
 
             for direction in directions:

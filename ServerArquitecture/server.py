@@ -3,13 +3,16 @@ from mesa.visualization.modules import CanvasGrid
 from mesa.visualization import Choice
 from mesa.visualization.UserParam import Slider  
 
-#Import AgentArquitecture
+# Import AgentArquitecture
 from AgentArquitecture.bomberman import BombermanAgent
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.metal import MetalAgent
 from AgentArquitecture.road import RoadAgent
 from AgentArquitecture.rock import RockAgent
 from AgentArquitecture.globe import GlobeAgent
+from AgentArquitecture.bomb import BombAgent  # Importar BombAgent
+from AgentArquitecture.powerup import PowerupAgent  # Importar PowerupAgent
+from AgentArquitecture.explosion import ExplosionAgent  # Importar ExplosionAgent
 
 from ModelArquitecture.model import MazeModel
 
@@ -53,6 +56,16 @@ def agent_portrayal(agent):
     elif type(agent) is GlobeAgent:
         portrayal["Shape"] = "Data/Images/globo.png"
         portrayal["Layer"] = 1
+    elif type(agent) is BombAgent:  # Añadir condición para BombAgent
+        portrayal["Shape"] = "Data/Images/bomba.jpg"
+        portrayal["Layer"] = 1
+    elif type(agent) is PowerupAgent:  # Añadir condición para PowerupAgent
+        portrayal["Shape"] = "Data/Images/fuego.png"
+        portrayal["Layer"] = 1
+    elif isinstance(agent, ExplosionAgent):  # Representación visual del agente de explosión
+        portrayal["Color"] = "red"
+        portrayal["Shape"] = "rect"
+        portrayal["Layer"] = 2
 
     return portrayal
 
@@ -66,9 +79,9 @@ def create_server(map):
         "width": width,
         "map": map,
         "search_strategy": Choice(
-            "No informados",
-            value="BFS",
-            choices=["BFS", "DFS", "UCS"],
+            "Recorridos",
+            value="A*",
+            choices=["BFS", "DFS", "UCS", "A*"],
         )
     }
 
