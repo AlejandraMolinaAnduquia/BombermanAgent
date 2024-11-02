@@ -10,6 +10,7 @@ from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.globe import GlobeAgent
 from AgentArquitecture.road import RoadAgent
 from SearchesArquitecture.InformedSearches.astar import AStarSearch
+from Utils.dinamicTools import load_map, get_map_path
 
 class MazeModel(Model):
     def __init__(self, width, height, map, search_strategy):
@@ -79,3 +80,36 @@ class MazeModel(Model):
     def is_cell_empty(self, position):
         cell_content = self.grid.get_cell_list_contents([position])
         return all(isinstance(agent, (RoadAgent, GoalAgent)) for agent in cell_content)
+    
+    def reset_game(self):
+        # Restablecer las posiciones iniciales de Bomberman, globos y otros elementos del mapa
+        self.schedule = RandomActivation(self)
+        self.grid = MultiGrid(self.grid.width, self.grid.height, True)
+
+        # Volver a colocar a Bomberman y a los globos en sus posiciones iniciales
+        bomberman = BombermanAgent(self.next_id(), self, self.search_strategy)
+        self.grid.place_agent(bomberman, (1, 1))  # Cambia esta posición según sea necesario
+        self.schedule.add(bomberman)
+
+        for pos in self.initial_globe_positions:
+            globe = GlobeAgent(self.next_id(), self)
+            self.grid.place_agent(globe, pos)
+            self.schedule.add(globe)
+
+        # Cargar otros agentes, como caminos
+        for x in range(self.grid.width):
+            for y in range(self.grid.height):
+                if self.grid.is_cell_empty((x, y)):
+                    road = RoadAgent(self.next_id(), self)
+                    self.grid.place_agent(road, (x, y))
+                    self.schedule.add(road)
+    
+    def reset_game(self):
+        """Reinicia el juego recargando el mapa desde el archivo original."""
+        # Obtener el nuevo mapa y reiniciar agentes
+        self.schedule = RandomActivation(self)
+        new_map_path = get_map_path()  # Llama al diálogo para obtener el archivo
+        if new_map_path:
+            new_map = load_map(new_map_path)
+            self.grid = MultiGrid(len(new_map[0]), len(new_map), True)
+            self.load_agents_from_map(new_map)
