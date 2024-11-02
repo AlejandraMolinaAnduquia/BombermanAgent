@@ -13,6 +13,8 @@ class BombermanAgent(Agent):
         self.bomb_position = None  # Almacena la posición de la última bomba colocada
         self.steps_to_explosion = 0  # Contador de tiempo hasta la explosión de la bomba
         self.original_path = []  # Guarda el camino óptimo calculado inicialmente
+        self.direction = (0, 0)
+        self.previous_pos = None 
 
     def place_bomb(self):
         from AgentArquitecture.bomb import BombAgent
@@ -57,8 +59,7 @@ class BombermanAgent(Agent):
                     agents_in_next_position = self.model.grid.get_cell_list_contents([next_position])
                     if all(isinstance(agent, RoadAgent) for agent in agents_in_next_position):
                         queue.append((next_position, path + [next_position]))
-
-        return []  # Si no encuentra una posición segura
+        return []
 
     def find_nearest_point_on_path(self):
         """Encuentra el punto en `original_path` más cercano a la posición actual de Bomberman."""
@@ -69,9 +70,9 @@ class BombermanAgent(Agent):
             if distance < min_distance:
                 min_distance = distance
                 nearest_point_index = i
-
-        # Retorna el camino restante desde el punto más cercano
+                
         return self.original_path[nearest_point_index:]
+
 
     def resume_from_current_position(self):
         """Restaura `path_to_exit` desde el punto más cercano en el camino original."""
@@ -82,6 +83,7 @@ class BombermanAgent(Agent):
         else:
             # Si no está en el camino, encuentra el punto más cercano y ajusta el camino
             self.path_to_exit = self.find_nearest_point_on_path()
+
 
     def move_to_exit_or_safety(self):
         """Controla el movimiento de Bomberman hacia la salida o hacia una posición segura si está evitando la explosión."""
@@ -102,34 +104,35 @@ class BombermanAgent(Agent):
                     self.bomb_position = None
                     self.resume_from_current_position()  # Retoma desde el punto más cercano
 
-            # Si hay un camino seguro, sigue un paso de ese camino
             if self.path_to_exit:
                 next_position = self.path_to_exit.pop(0)
+                self.previous_pos = self.pos 
+                self.direction = (next_position[0] - self.pos[0], next_position[1] - self.pos[1])  
                 self.model.grid.move_agent(self, next_position)
             return
 
-        # Si no está esperando explosión, sigue el camino original a la salida
         if self.path_to_exit:
             next_position = self.path_to_exit[0]
             agents_in_cell = self.model.grid.get_cell_list_contents([next_position])
 
-            # Coloca una bomba si encuentra una roca y no está esperando una explosión
             if any(isinstance(agent, RockAgent) for agent in agents_in_cell):
                 self.place_bomb()
-                safe_path = self.find_closest_safe_position()  # Encuentra una posición segura
+                safe_path = self.find_closest_safe_position()
                 if safe_path:
-                    self.path_to_exit = safe_path  # Sigue el camino seguro temporalmente
+                    self.path_to_exit = safe_path  
                 return
 
-            # Si la siguiente celda está libre, Bomberman se mueve
             if all(
                 not isinstance(agent, (RockAgent, MetalAgent, BombAgent)) for agent in agents_in_cell
             ):
                 self.path_to_exit.pop(0)
+                self.previous_pos = self.pos 
+                self.direction = (next_position[0] - self.pos[0], next_position[1] - self.pos[1]) 
                 self.model.grid.move_agent(self, next_position)
                 self.is_moving = True
 
     def step(self):
+        
         """Realiza un paso en la simulación."""
         if not self.is_search_initialized:
             start_position = (self.pos[0], self.pos[1])
@@ -139,9 +142,8 @@ class BombermanAgent(Agent):
         if not self.has_explored:
             self.search_strategy.explore_step(self)
             if self.has_explored:
-                # Imprime el camino óptimo solo una vez después de expandir todos los nodos
                 print("Camino óptimo calculado:", self.path_to_exit)
-                self.original_path = self.path_to_exit[:]  # Guarda el camino original para retomarlo después
+                self.original_path = self.path_to_exit[:]  
             return
 
         self.move_to_exit_or_safety()
