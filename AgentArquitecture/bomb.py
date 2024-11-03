@@ -6,7 +6,7 @@ class BombAgent(Agent):
         super().__init__(unique_id, model)
         self.position = position
         self.destruction_power = destruction_power
-        self.timer = destruction_power + 1  # Tiempo de detonación es pd + 1 steps
+        self.timer = destruction_power + 1 
     
     def step(self):
         if self.timer > 0:
