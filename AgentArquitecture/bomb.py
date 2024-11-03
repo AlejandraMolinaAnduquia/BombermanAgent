@@ -22,11 +22,13 @@ class BombAgent(Agent):
         from AgentArquitecture.explosion import ExplosionAgent
         from AgentArquitecture.metal import MetalAgent
         from AgentArquitecture.bomberman import BombermanAgent
+        from AgentArquitecture.globe import GlobeAgent  # Asegúrate de importar GlobeAgent
+
         print(f"Explosión de bomba en: {self.position} con poder de destrucción: {self.destruction_power}")
-        
+
         affected_positions = [self.position]
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        
+
         for direction in directions:
             for step in range(1, self.destruction_power + 1):
                 target_position = (self.position[0] + direction[0] * step, self.position[1] + direction[1] * step)
@@ -42,10 +44,8 @@ class BombAgent(Agent):
                         stop_explosion = True  # Detener la expansión si encuentra metal
                         break
                     elif isinstance(agent, RockAgent):
-                        # Destruye la roca y la añade a las posiciones afectadas
                         self.model.grid.remove_agent(agent)
                         self.model.schedule.remove(agent)
-                        affected_positions.append(target_position)  # Incluye la posición de la roca destruida
                         stop_explosion = True
                         
                         # Probabilidad de generar un comodín en la posición de la roca destruida
@@ -56,9 +56,16 @@ class BombAgent(Agent):
                             print(f"Comodín generado en la posición: {target_position}")
 
                     elif isinstance(agent, BombermanAgent):
-                        self.model.running = False
-                        print("Bomberman ha sido alcanzado por la explosión y ha muerto.")
+                        self.model.grid.remove_agent(agent)
+                        self.model.schedule.remove(agent)
+                        self.model.running = False  # Detener la simulación
+                        print(f"Bomberman ha sido alcanzado por la explosión en {target_position} y ha muerto. Simulación finalizada.")
                         stop_explosion = True
+
+                    elif isinstance(agent, GlobeAgent):
+                        self.model.grid.remove_agent(agent)
+                        self.model.schedule.remove(agent)
+                        print(f"GlobeAgent destruido por la explosión en la posición {target_position}.")  # Mensaje de eliminación del globo
 
                 if stop_explosion:
                     break  # Si el metal u otro obstáculo detiene la explosión, no continúa expandiéndose
@@ -72,7 +79,4 @@ class BombAgent(Agent):
 
         print(f"Área afectada por la explosión en el step actual: {affected_positions}")
 
-        # Coloca una explosión en la posición de la bomba original
-        explosion_at_bomb_position = ExplosionAgent(self.model.next_id(), self.model, self.position, duration=1)
-        self.model.grid.place_agent(explosion_at_bomb_position, self.position)
-        self.model.schedule.add(explosion_at_bomb_position)
+
