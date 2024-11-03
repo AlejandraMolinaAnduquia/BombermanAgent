@@ -43,10 +43,18 @@ class GlobeAgent(Agent):
                 print("No se pudo mover el globo a ninguna nueva posición")
 
     def handle_collision(self, bomberman):
-        # Si colisionan, manejar la lógica de visualización y eliminación
-        self.model.grid.remove_agent(bomberman)  # Remover Bomberman
-        # Aquí puedes añadir lógica para mostrar solo GlobeAgent en la posición de colisión
-        print(f"Colisión detectada entre GlobeAgent y BombermanAgent. {bomberman.unique_id} eliminado.")
+        """Detiene la simulación si ocurre una colisión entre GlobeAgent y Bomberman."""
+        # Guarda la posición de la colisión
+        collision_position = bomberman.pos
+
+        # Elimina a Bomberman del modelo y detiene la simulación
+        self.model.grid.remove_agent(bomberman)
+        self.model.schedule.remove(bomberman)
+        self.model.running = False  # Detiene la simulación
+
+        # Imprime un mensaje con la posición de la colisión
+        print(f"Colisión detectada entre GlobeAgent y BombermanAgent en la posición {collision_position}. Bomberman eliminado y simulación finalizada.")
+
 
     def get_bomberman_agent(self):
         for agent in self.model.schedule.agents:
