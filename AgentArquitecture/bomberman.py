@@ -8,17 +8,31 @@ class BombermanAgent(Agent):
         self.has_explored = False
         self.is_search_initialized = False
         self.is_moving = False
-        self.destruction_power = 1  # Poder inicial de destrucción
-        self.waiting_for_explosion = False  # Indica si Bomberman está esperando a que la bomba explote
-        self.bomb_position = None  # Almacena la posición de la última bomba colocada
-        self.steps_to_explosion = 0  # Contador de tiempo hasta la explosión de la bomba
-        self.original_path = []  # Guarda el camino óptimo calculado inicialmente
-        self.retreat_steps = 0  # Pasos para retroceder antes de la explosión
+        self.destruction_power = 1  
+        self.waiting_for_explosion = False  
+        self.bomb_position = None  
+        self.steps_to_explosion = 0  
+        self.original_path = [] 
+        self.retreat_steps = 0 
+        self.direction = (0, 0) 
+        
+        self.directions = {
+                'UP': (0, -1),
+                'DOWN': (0, 1),
+                'LEFT': (-1, 0),
+                'RIGHT': (1, 0),
+            }
 
+    def calculate_direction(self):
+        """Determina la dirección en la que se moverá Bomberman."""
+        if self.is_moving:
+            return self.directions['UP'] 
+        return self.direction
+    
     def place_bomb(self):
         from AgentArquitecture.bomb import BombAgent
         if self.waiting_for_explosion:
-            return  # Ya hay una bomba activa, no coloca otra
+            return  
 
         bomb = BombAgent(self.model.next_id(), self.model, self.pos, self.destruction_power)
         self.model.grid.place_agent(bomb, self.pos)
@@ -43,9 +57,16 @@ class BombermanAgent(Agent):
 
     def move_to_position(self, next_position):
         """Mueve a Bomberman a la posición siguiente y recoge cualquier comodín presente."""
-        self.model.grid.move_agent(self, next_position)
-        print(f"Moviéndose a la posición: {self.pos}")
-        self.collect_powerup()  # Recoge el comodín si está en la nueva posición
+        
+        if next_position is not None:
+            self.model.grid.move_agent(self, next_position)
+            self.is_moving = True 
+            print(f"Moviéndose a la posición: {self.pos}")
+            self.collect_powerup()  
+        else:
+            print("Error: next_position es None o no válido.")
+
+
 
     def retreat_on_optimal_path(self):
         """Retrocede sobre el camino óptimo para esconderse de la explosión."""
@@ -79,6 +100,7 @@ class BombermanAgent(Agent):
 
         if self.waiting_for_explosion:
             if self.steps_to_explosion > 0:
+                self.is_moving = False
                 self.steps_to_explosion -= 1
                 self.retreat_on_optimal_path()
             else:
@@ -106,7 +128,8 @@ class BombermanAgent(Agent):
             start_position = (self.pos[0], self.pos[1])
             self.search_strategy.start_search(start_position, self.model.goal_position)
             self.is_search_initialized = True
-
+        
+        self.direction = self.calculate_direction() 
         if not self.has_explored:
             self.search_strategy.explore_step(self)
             if self.has_explored:
