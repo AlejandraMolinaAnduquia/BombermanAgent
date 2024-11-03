@@ -10,11 +10,15 @@ class GlobeAgent(Agent):
     def step(self):
         # Obtener el agente Bomberman para verificar su estado y posición
         bomberman = self.get_bomberman_agent()
+        if bomberman is None:
+            return  # Si no encuentra a Bomberman, termina el paso actual
+
         bomberman_position = bomberman.pos
 
         # Comprobar colisión con Bomberman antes de moverse
         if self.check_collision(bomberman_position):
-            self.model.reset_game()  # Reiniciar el juego si colisionan
+            self.model.running = False  # Detener el modelo
+            self.model.game_over_message = "Game Over"  # Agregar mensaje de Game Over
             return
 
         # Mover el globo si Bomberman está en movimiento
@@ -34,10 +38,12 @@ class GlobeAgent(Agent):
 
                     # Detectar si hay una posible colisión cruzada
                     if new_position == bomberman_position:
-                        self.model.reset_game()
+                        self.model.running = False  # Detener el modelo
+                        self.model.game_over_message = "Game Over"  # Agregar mensaje de Game Over
                         return
                     elif self.check_cross_collision(new_position, bomberman):
-                        self.model.reset_game()
+                        self.model.running = False  # Detener el modelo
+                        self.model.game_over_message = "Game Over"  # Agregar mensaje de Game Over
                         return
 
                     # Mover el globo a la nueva posición
@@ -63,4 +69,3 @@ class GlobeAgent(Agent):
 
         # Comparar las posiciones futuras de Bomberman y del globo
         return new_position == next_bomberman_position
-
