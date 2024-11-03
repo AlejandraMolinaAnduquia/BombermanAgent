@@ -11,14 +11,16 @@ class GlobeAgent(Agent):
     def step(self):
         bomberman = self.get_bomberman_agent()
         if bomberman is None:
-            return  
+            return  # Si no hay Bomberman, salir del método
 
         bomberman_position = bomberman.pos
+        if bomberman_position is None:
+            return  # Si la posición de Bomberman es None, salir del método
+
         if self.awaiting_step_confirmation:
+            # Revisar colisión normal y colisión cruzada
             if self.check_collision(bomberman_position) or self.check_cross_collision(self.pos, bomberman):
-                self.model.running = False
-                self.model.game_over_message = "Game Over"
-                self.model.grid.remove_agent(bomberman)
+                self.handle_collision(bomberman)
                 return 
             self.awaiting_step_confirmation = False
 
@@ -40,6 +42,11 @@ class GlobeAgent(Agent):
             if not moved:
                 print("No se pudo mover el globo a ninguna nueva posición")
 
+    def handle_collision(self, bomberman):
+        # Si colisionan, manejar la lógica de visualización y eliminación
+        self.model.grid.remove_agent(bomberman)  # Remover Bomberman
+        # Aquí puedes añadir lógica para mostrar solo GlobeAgent en la posición de colisión
+        print(f"Colisión detectada entre GlobeAgent y BombermanAgent. {bomberman.unique_id} eliminado.")
 
     def get_bomberman_agent(self):
         for agent in self.model.schedule.agents:
@@ -50,8 +57,7 @@ class GlobeAgent(Agent):
     def check_collision(self, bomberman_position):
         x, y = self.pos
         bx, by = bomberman_position
-        print("posicion de BOMBERMAN COLISION: ", bx, by)
-        return abs(x - bx) + abs(y - by) == 1
+        return abs(x - bx) + abs(y - by) == 0  # Cambia a 0 para la misma posición
 
     def check_cross_collision(self, current_position, bomberman):
         bx, by = bomberman.pos 
