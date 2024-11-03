@@ -103,13 +103,3 @@ class MazeModel(Model):
                     road = RoadAgent(self.next_id(), self)
                     self.grid.place_agent(road, (x, y))
                     self.schedule.add(road)
-    
-    def reset_game(self):
-        """Reinicia el juego recargando el mapa desde el archivo original."""
-        # Obtener el nuevo mapa y reiniciar agentes
-        self.schedule = RandomActivation(self)
-        new_map_path = get_map_path()  # Llama al diálogo para obtener el archivo
-        if new_map_path:
-            new_map = load_map(new_map_path)
-            self.grid = MultiGrid(len(new_map[0]), len(new_map), True)
-            self.load_agents_from_map(new_map)
