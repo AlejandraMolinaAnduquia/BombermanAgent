@@ -63,8 +63,7 @@ def agent_portrayal(agent):
         portrayal["Shape"] = "Data/Images/fuego.png"
         portrayal["Layer"] = 1
     elif isinstance(agent, ExplosionAgent):  # Representación visual del agente de explosión
-        portrayal["Color"] = "red"
-        portrayal["Shape"] = "rect"
+        portrayal["Shape"] = "Data/Images/explosion.png"
         portrayal["Layer"] = 2
 
     return portrayal

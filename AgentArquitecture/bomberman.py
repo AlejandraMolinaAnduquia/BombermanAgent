@@ -57,14 +57,15 @@ class BombermanAgent(Agent):
 
     def move_to_position(self, next_position):
         """Mueve a Bomberman a la posición siguiente y recoge cualquier comodín presente."""
-        
-        if next_position is not None:
-            self.model.grid.move_agent(self, next_position)
-            self.is_moving = True 
-            print(f"Moviéndose a la posición: {self.pos}")
-            self.collect_powerup()  
-        else:
-            print("Error: next_position es None o no válido.")
+        # Verifica que Bomberman no haya sido eliminado antes de intentar moverse
+        if self.pos is None or next_position is None:
+            print("Movimiento abortado: Bomberman ha sido eliminado o la siguiente posición no es válida.")
+            return
+
+        self.model.grid.move_agent(self, next_position)
+        self.is_moving = True 
+        print(f"Moviéndose a la posición: {self.pos}")
+        self.collect_powerup() 
 
 
 
@@ -124,6 +125,10 @@ class BombermanAgent(Agent):
 
     def step(self):
         """Realiza un paso en la simulación."""
+        # Si Bomberman ha sido eliminado, evita que ejecute acciones
+        if self.pos is None:
+            return
+        
         if not self.is_search_initialized:
             start_position = (self.pos[0], self.pos[1])
             self.search_strategy.start_search(start_position, self.model.goal_position)

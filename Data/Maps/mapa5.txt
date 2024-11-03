@@ -1,9 +1,9 @@
-R,C,C,M,C,C,R,C,C,M
-C_b,M,C,C,C,M,C,G,M,C
-C,C,R,R,C,C,C,R,C,C
-C,M,C,C,R,M,R,C,R,M
-C,R,C,M,C,C,R,C,R,C
-C,M,C,G,C,M,C,M,C,C
+R,C,C,M,C,C,R,C,M,M
+C_b,M,C,C,C,M,M,G,M,C
+C,C,R,R,C,C,C,R,R,C
+C,M,C,C,R,M,R,R,C,M
+C,R,C,M,C,C,R,C,R,G
+C,M,C,G,C,M,C,M,R,C
 R,C,C,R,C,C,C,C,C,R
 R,C,M,C,C,R,C,R,R,M
 C,C,C,R,C,C,C,M,C,R_s
