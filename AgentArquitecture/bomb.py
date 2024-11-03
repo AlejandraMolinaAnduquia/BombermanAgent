@@ -1,5 +1,5 @@
 from mesa import Agent
-from random import random  # Para probabilidad de aparición del comodín
+from random import random 
 
 class BombAgent(Agent):
     def __init__(self, unique_id, model, position, destruction_power):
