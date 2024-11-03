@@ -24,6 +24,7 @@ class AStarSearch(SearchStrategy):
         heapq.heappush(self.open_set, (0, self.index, start_tuple[0], [start_tuple[0]]))
         self.g_score[start_tuple[0]] = 0
         self.index += 1
+        self.step_count = 0  # Resetea el contador de pasos de expansión
 
     def explore_step(self, agent, diagonal=False):
         """Expande el siguiente nodo en la cola de prioridad."""
@@ -33,15 +34,19 @@ class AStarSearch(SearchStrategy):
         # Extrae el nodo con menor f_score
         _, _, current, path = heapq.heappop(self.open_set)
 
+        # Imprime el orden de expansión de cada nodo
+        self.step_count += 1
+        print(f"Expandiendo nodo {self.step_count}: {current}, Camino acumulado hasta ahora: {path}")
+
         # Marca la celda en el orden de expansión
         agent.model.grid[current[0]][current[1]][0].visit_order = self.step_count
-        self.step_count += 1
 
         # Verifica si el nodo actual es la meta
-        AgentArquitecture_in_cell = agent.model.grid[current[0]][current[1]]
-        if any(isinstance(a, GoalAgent) for a in AgentArquitecture_in_cell):
+        agents_in_cell = agent.model.grid[current[0]][current[1]]
+        if any(isinstance(a, GoalAgent) for a in agents_in_cell):
             agent.path_to_exit = path
             agent.has_explored = True
+            print("Meta alcanzada. Camino óptimo calculado:", path)
             return None
 
         # Agrega a visitados
@@ -61,10 +66,10 @@ class AStarSearch(SearchStrategy):
                 and 0 <= new_y < agent.model.grid.height
                 and new_position not in self.visited
             ):
-                AgentArquitecture_in_new_cell = agent.model.grid[new_x][new_y]
+                agents_in_new_cell = agent.model.grid[new_x][new_y]
 
                 # Permite rocas y caminos, ignora solo el metal
-                if all(isinstance(agent, (RoadAgent, GoalAgent, RockAgent)) for agent in AgentArquitecture_in_new_cell):
+                if all(isinstance(agent, (RoadAgent, GoalAgent, RockAgent)) for agent in agents_in_new_cell):
                     tentative_g_score = self.g_score[current] + 10  # Costo de movimiento
 
                     # Calcula la heurística (distancia de Manhattan)
@@ -79,46 +84,3 @@ class AStarSearch(SearchStrategy):
 
         return current
 
-
-    def get_path(self, start, goal, model):
-        """Calcula el camino óptimo de `start` a `goal` usando A* y devuelve una lista de posiciones."""
-        from AgentArquitecture.bomb import BombAgent
-        from AgentArquitecture.metal import MetalAgent
-        self.open_set = []  # Reinicia la cola de prioridad para cada búsqueda
-        self.visited = set()
-        self.g_score = {start: 0}
-        heapq.heappush(self.open_set, (0, self.index, start, [start]))
-        self.index += 1
-
-        while self.open_set:
-            _, _, current, path = heapq.heappop(self.open_set)
-
-            # Si hemos alcanzado la meta, devolvemos el camino
-            if current == goal:
-                return path
-
-            self.visited.add(current)
-
-            # Explora las celdas adyacentes
-            directions = [(-1, 0), (1, 0), (0, -1)]
-            for direction in directions:
-                neighbor = (current[0] + direction[0], current[1] + direction[1])
-
-                # Verifica que la posición esté dentro de los límites y no sea un obstáculo
-                if model.grid.out_of_bounds(neighbor) or neighbor in self.visited:
-                    continue
-
-                agents_in_neighbor = model.grid.get_cell_list_contents([neighbor])
-                if any(isinstance(agent, (RockAgent, MetalAgent, BombAgent)) for agent in agents_in_neighbor):
-                    continue  # Ignora celdas que no son transitables
-
-                # Calcula el costo hasta el vecino y evalúa la heurística
-                tentative_g_score = self.g_score[current] + 1  # Cada movimiento tiene un costo de 1
-                if neighbor not in self.g_score or tentative_g_score < self.g_score[neighbor]:
-                    self.g_score[neighbor] = tentative_g_score
-                    f_score = tentative_g_score + self.manhattan_distance(neighbor, goal)
-                    heapq.heappush(self.open_set, (f_score, self.index, neighbor, path + [neighbor]))
-                    self.index += 1
-
-        # Si no se encuentra un camino, devuelve una lista vacía
-        return []

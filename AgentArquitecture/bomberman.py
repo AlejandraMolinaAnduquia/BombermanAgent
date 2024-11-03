@@ -13,28 +13,66 @@ class BombermanAgent(Agent):
         self.bomb_position = None  # Almacena la posición de la última bomba colocada
         self.steps_to_explosion = 0  # Contador de tiempo hasta la explosión de la bomba
         self.original_path = []  # Guarda el camino óptimo calculado inicialmente
+        self.retreat_steps = 0  # Pasos para retroceder antes de la explosión
         self.direction = (0, 0)
         self.previous_pos = None 
         self.pos = (0, 0)
 
     def place_bomb(self):
         from AgentArquitecture.bomb import BombAgent
-        """Coloca una bomba en la posición actual de Bomberman si no está esperando otra explosión."""
         if self.waiting_for_explosion:
             return  # Ya hay una bomba activa, no coloca otra
 
-        # Coloca la bomba y configura la espera para la explosión
         bomb = BombAgent(self.model.next_id(), self.model, self.pos, self.destruction_power)
         self.model.grid.place_agent(bomb, self.pos)
         self.model.schedule.add(bomb)
         self.waiting_for_explosion = True
         self.bomb_position = self.pos
+        self.steps_to_explosion = self.destruction_power + 2
+        self.retreat_steps = self.destruction_power + 1
+        print(f"Bomba colocada en la posición: {self.bomb_position} con poder de destrucción: {self.destruction_power}")
+
+    def collect_powerup(self):
+        """Verifica si hay un PowerupAgent en la posición actual y lo recoge."""
+        from AgentArquitecture.powerup import PowerupAgent
+        agents_in_cell = self.model.grid.get_cell_list_contents([self.pos])
+        
+        for agent in agents_in_cell:
+            if isinstance(agent, PowerupAgent):
+                self.destruction_power += 1
+                self.model.grid.remove_agent(agent)
+                self.model.schedule.remove(agent)
+                print(f"Comodín recogido en la posición: {self.pos}. Poder de destrucción aumentado a {self.destruction_power}.")
+
+    def move_to_position(self, next_position):
+        """Mueve a Bomberman a la posición siguiente y recoge cualquier comodín presente."""
+        self.model.grid.move_agent(self, next_position)
+        print(f"Moviéndose a la posición: {self.pos}")
+        self.collect_powerup()  # Recoge el comodín si está en la nueva posición
+
+    def retreat_on_optimal_path(self):
+        """Retrocede sobre el camino óptimo para esconderse de la explosión."""
+        if self.retreat_steps > 0 and self.original_path:
+            current_index = self.original_path.index(self.pos)
+            retreat_index = max(current_index - self.retreat_steps, 0)
+            retreat_path = self.original_path[retreat_index:current_index][::-1]
+            
+            if retreat_path:
+                next_position = retreat_path.pop(0)
+                if self.is_adjacent(self.pos, next_position):
+                    self.move_to_position(next_position)
+                else:
+                    print(f"Error: Movimiento diagonal detectado en el retroceso, entre {self.pos} y {next_position}.")
+            self.retreat_steps -= 1
+
+    def resume_optimal_path(self):
+        """Reanuda el camino óptimo desde la posición actual."""
         self.steps_to_explosion = self.destruction_power + 2  # Ajusta el tiempo hasta la explosión
 
     def find_closest_safe_position(self):
         from AgentArquitecture.road import RoadAgent
         """Encuentra la posición más cercana segura para evitar la explosión."""
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Movimientos ortogonales
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         queue = [(self.pos, [])]
         visited = set()
 
@@ -69,15 +107,14 @@ class BombermanAgent(Agent):
     def resume_from_current_position(self):
         """Restaura `path_to_exit` desde el punto más cercano en el camino original."""
         if self.pos in self.original_path:
-            # Si está en el camino óptimo, retoma desde esta posición
             current_index = self.original_path.index(self.pos)
             self.path_to_exit = self.original_path[current_index + 1:]
-        else:
-            # Si no está en el camino, encuentra el punto más cercano y ajusta el camino
-            self.path_to_exit = self.find_nearest_point_on_path()
+
+    def is_adjacent(self, pos1, pos2):
+        """Verifica si `pos2` está en una casilla adyacente ortogonal a `pos1`."""
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1]) == 1
 
     def move_to_exit_or_safety(self):
-        """Controla el movimiento de Bomberman hacia la salida o hacia una posición segura si está evitando la explosión."""
         from AgentArquitecture.rock import RockAgent
         from AgentArquitecture.metal import MetalAgent
         from AgentArquitecture.bomb import BombAgent
@@ -88,43 +125,29 @@ class BombermanAgent(Agent):
         next_position = self.path_to_exit[0]  # Ajusta esto según tu lógica
         self.direction = (next_position[0] - self.pos[0], next_position[1] - self.pos[1])
 
-        # Si está esperando la explosión, sigue el camino hacia una posición segura
         if self.waiting_for_explosion:
             if self.steps_to_explosion > 0:
                 self.steps_to_explosion -= 1
+                self.retreat_on_optimal_path()
             else:
-                # Verifica si la bomba ha explotado
                 agents_in_bomb_cell = self.model.grid.get_cell_list_contents([self.bomb_position])
                 if not any(isinstance(agent, BombAgent) for agent in agents_in_bomb_cell):
-                    # La bomba ha explotado, permite retomar el camino sin teletransportarse
                     self.waiting_for_explosion = False
                     self.bomb_position = None
-                    self.resume_from_current_position()  # Retoma desde el punto más cercano
-
-            if self.path_to_exit:
-                next_position = self.path_to_exit.pop(0)
-                self.previous_pos = self.pos 
-                self.direction = (next_position[0] - self.pos[0], next_position[1] - self.pos[1])  
-                self.model.grid.move_agent(self, next_position)
+                    print("Explosión completada, retomando el camino óptimo.")
+                    self.resume_optimal_path()
             return
 
-        # Verifica si la celda siguiente tiene obstáculos
-        agents_in_cell = self.model.grid.get_cell_list_contents([next_position])
-        if any(isinstance(agent, RockAgent) for agent in agents_in_cell):
-            self.place_bomb()
-            safe_path = self.find_closest_safe_position()
-            if safe_path:
-                self.path_to_exit = safe_path  
-            return
+        if self.path_to_exit:
+            next_position = self.path_to_exit.pop(0)
+            agents_in_cell = self.model.grid.get_cell_list_contents([next_position])
 
-        if all(
-            not isinstance(agent, (RockAgent, MetalAgent, BombAgent)) for agent in agents_in_cell
-        ):
-            self.path_to_exit.pop(0)
-            self.previous_pos = self.pos 
-            self.direction = (next_position[0] - self.pos[0], next_position[1] - self.pos[1]) 
-            self.model.grid.move_agent(self, next_position)
-            self.is_moving = True
+            if all(not isinstance(agent, (RockAgent, MetalAgent, BombAgent)) for agent in agents_in_cell):
+                self.move_to_position(next_position)
+
+            elif any(isinstance(agent, RockAgent) for agent in agents_in_cell):
+                self.place_bomb()
+                
 
     def step(self):
         """Realiza un paso en la simulación."""
@@ -137,7 +160,8 @@ class BombermanAgent(Agent):
             self.search_strategy.explore_step(self)
             if self.has_explored:
                 print("Camino óptimo calculado:", self.path_to_exit)
-                self.original_path = self.path_to_exit[:]  
+                self.original_path = self.path_to_exit[:]
             return
 
         self.move_to_exit_or_safety()
+        print(f"Posición actual de Bomberman en este paso: {self.pos}")
