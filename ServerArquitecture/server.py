@@ -80,15 +80,16 @@ def create_server(map):
     grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 
     params = {
-        "height": height,
-        "width": width,
-        "map": map,
-        "search_strategy": Choice(
-            "Recorridos",
-            value="A*",
-            choices=["BFS", "DFS", "UCS", "A*"],
-        )
-    }
+    "height": height,
+    "width": width,
+    "map": map,
+    "search_strategy": Choice(
+        "Recorridos",
+        value="A*",
+        choices=["BFS", "DFS", "UCS", "A*", "Beam Search"], 
+    ),
+    "beta": Slider("Beta", value=4, min_value=1, max_value=4),
+}
 
     server = ModularServer(MazeModel, [grid], "Bomberman", params)
     server.port = 8521

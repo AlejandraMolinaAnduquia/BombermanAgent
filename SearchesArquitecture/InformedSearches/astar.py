@@ -2,6 +2,7 @@ from SearchesArquitecture.searchStrategy import SearchStrategy
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.road import RoadAgent
 from AgentArquitecture.rock import RockAgent
+from AgentArquitecture.globe import GlobeAgent
 import heapq
 
 class AStarSearch(SearchStrategy):
@@ -69,7 +70,7 @@ class AStarSearch(SearchStrategy):
                 agents_in_new_cell = agent.model.grid[new_x][new_y]
 
                 # Permite rocas y caminos, ignora solo el metal
-                if all(isinstance(agent, (RoadAgent, GoalAgent, RockAgent)) for agent in agents_in_new_cell):
+                if all(isinstance(agent, (RoadAgent, GoalAgent, RockAgent, GlobeAgent)) for agent in agents_in_new_cell):
                     tentative_g_score = self.g_score[current] + 10  # Costo de movimiento
 
                     # Calcula la heurística (distancia de Manhattan)
