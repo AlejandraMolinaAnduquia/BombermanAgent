@@ -11,6 +11,7 @@ from AgentArquitecture.globe import GlobeAgent
 from AgentArquitecture.road import RoadAgent
 from SearchesArquitecture.InformedSearches.astar import AStarSearch
 from SearchesArquitecture.InformedSearches.beamsearch import BeamSearch
+from SearchesArquitecture.InformedSearches.hillclimbing import HillClimbing
 from Utils.dinamicTools import load_map, get_map_path
 
 class MazeModel(Model):
@@ -32,6 +33,8 @@ class MazeModel(Model):
             search_strategy = AStarSearch()
         elif search_strategy == "Beam Search":
             search_strategy = BeamSearch(beta)
+        elif search_strategy == "Hill Climbing":
+            search_strategy = HillClimbing()
 
         for y, row in enumerate(map):
             for x, cell in enumerate(row):
