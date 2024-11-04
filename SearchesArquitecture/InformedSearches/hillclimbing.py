@@ -8,18 +8,18 @@ from AgentArquitecture.globe import GlobeAgent
 class HillClimbing(SearchStrategy):
     def __init__(self):
         self.step_count = 0
-        self.visited_nodes = set()  # Conjunto para almacenar los nodos visitados
-        self.path_to_goal = []  # Almacena el camino hacia la meta
-        self.current = None  # Nodo actual
-        self.goal = None  # Nodo objetivo
+        self.visited_nodes = set()  
+        self.path_to_goal = []  
+        self.current = None
+        self.goal = None  
 
     def start_search(self, start, goal):
         """Inicia la búsqueda Hill Climbing desde el nodo de inicio."""
         self.goal = goal
-        self.current = start  # Comienza desde el nodo inicial
-        self.step_count = 0  # Resetea el contador de pasos de expansión
-        self.visited_nodes.clear()  # Limpia los nodos visitados al iniciar la búsqueda
-        self.path_to_goal.clear()  # Resetea el camino a la meta
+        self.current = start 
+        self.step_count = 0 
+        self.visited_nodes.clear() 
+        self.path_to_goal.clear() 
 
     def heuristic(self, position):
         """Define la heurística: distancia de Manhattan al objetivo."""
@@ -30,12 +30,10 @@ class HillClimbing(SearchStrategy):
         self.step_count += 1
         print(f"Paso {self.step_count}: Evaluando nodo {self.current}")
 
-        # Verifica que el nodo actual no sea None y esté dentro de los límites
         if self.current is None or not (0 <= self.current[0] < agent.model.grid.width) or not (0 <= self.current[1] < agent.model.grid.height):
             print("Nodo actual no válido:", self.current)
             return None
 
-        # Marca la celda con el nivel actual si no ha sido visitada
         if self.current not in self.visited_nodes:
             cell = agent.model.grid[self.current[0]][self.current[1]]
             if cell is not None:
@@ -43,7 +41,6 @@ class HillClimbing(SearchStrategy):
                 self.visited_nodes.add(self.current)
                 self.path_to_goal.append(self.current)
 
-        # Verifica si el nodo actual es la meta
         agents_in_cell = agent.model.grid[self.current[0]][self.current[1]]
         if any(isinstance(a, GoalAgent) for a in agents_in_cell):
             agent.path_to_exit = self.path_to_goal
@@ -51,37 +48,29 @@ class HillClimbing(SearchStrategy):
             print("Meta alcanzada en:", self.current)
             return None
 
-        # Si no se ha alcanzado la meta, continúa explorando
         neighbors = self.get_neighbors(agent, self.current)
-        
-        # Filtra vecinos válidos permitiendo RockAgent y GlobeAgent pero no MetalAgent
         valid_neighbors = []
         for neighbor in neighbors:
             agents_at_neighbor = agent.model.grid[neighbor[0]][neighbor[1]]
             if neighbor not in self.visited_nodes:
                 if any(isinstance(a, MetalAgent) for a in agents_at_neighbor):
-                    continue  # No considera nodos con MetalAgent
+                    continue  
                 else:
-                    # Permite nodos con RockAgent o GlobeAgent
                     valid_neighbors.append(neighbor)
 
         if valid_neighbors:
-            # Selecciona el vecino con la mejor heurística entre los válidos
             next_node = min(valid_neighbors, key=lambda neighbor: self.heuristic(neighbor))
             self.current = next_node
             print(f"Moviendo a {self.current} basado en la heurística")
+
         else:
-            # No hay vecinos válidos, inicia retroceso
             print("No hay vecinos válidos, iniciando retroceso...")
             if self.path_to_goal:
-                # Deshace el último movimiento en el camino hacia la meta
-                self.path_to_goal.pop()  # Elimina el último nodo del camino actual
+                self.path_to_goal.pop() 
                 if self.path_to_goal:
-                    # Si aún quedan nodos en el camino, vuelve al anterior
                     self.current = self.path_to_goal[-1]
                     print(f"Retrocediendo a {self.current}")
                 else:
-                    # Si no quedan nodos, ha vuelto al inicio y no hay rutas posibles
                     print("No hay más nodos por retroceder. Fin de la búsqueda.")
                     self.current = None
             else:
@@ -93,13 +82,12 @@ class HillClimbing(SearchStrategy):
     def get_neighbors(self, agent, current):
         """Obtiene los vecinos válidos del nodo actual."""
         neighbors = []
-        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Direcciones ortogonales
+        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 
         for direction in directions:
             new_x, new_y = current[0] + direction[0], current[1] + direction[1]
             new_position = (new_x, new_y)
 
-            # Verifica límites y validez del vecino
             if (
                 0 <= new_x < agent.model.grid.width
                 and 0 <= new_y < agent.model.grid.height
