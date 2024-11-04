@@ -11,11 +11,22 @@ class ucs(SearchStrategy):
         self.step_count = 0
         self.index = 0
 
-    def start_search(self, start):
-        start = (start[0], tuple(start[1]))
-        heapq.heappush(self.priority_queue, (0, self.index, start[0], [start[0]]))
-        self.cost_so_far[start[0]] = 0
+    def start_search(self, start, goal=None):
+        # Aseguramos que `start` sea una tupla con al menos un elemento
+        if isinstance(start, tuple) and len(start) >= 2:
+            start_position = (start[0], start[1])  # Asumiendo que start[0] son las coordenadas x y start[1] y
+        else:
+            raise ValueError("El parámetro 'start' debe ser una tupla con al menos dos elementos.")
+
+        heapq.heappush(self.priority_queue, (0, self.index, start_position, [start_position]))
+        self.cost_so_far[start_position] = 0
         self.index += 1
+        
+        # Manejo del objetivo
+        if goal is not None:
+            self.goal = goal
+        else:
+            self.goal = None
 
     def explore_step(self, agent, diagonal=False):
         if not self.priority_queue:
@@ -40,14 +51,11 @@ class ucs(SearchStrategy):
                     (0, -1, False), (-1, -1, True), (-1, 0, False), (-1, 1, True)
                 ]
             else:
-                #direcciones = [(0, 1, False), (1, 0, False), (0, -1, False), (-1, 0, False)]
                 directions = [(-1, 0, False), (0, 1, False), (1, 0, False), (0, -1, False)]
 
             for direction in directions:
                 new_x, new_y, is_diagonal = current[0] + direction[0], current[1] + direction[1], direction[2]
                 new_position = (new_x, new_y)
-                print(new_position)
-                print(diagonal)
 
                 if (
                     0 <= new_x < agent.model.grid.width
@@ -61,7 +69,5 @@ class ucs(SearchStrategy):
                             self.cost_so_far[new_position] = new_cost
                             heapq.heappush(self.priority_queue, (new_cost, self.index, new_position, path + [new_position]))
                             self.index += 1
-                            print("insertando: ", new_position, " con coste: ", new_cost, " y path: ", path + [new_position])
-                print("priority_queue: ", self.priority_queue)
 
         return current

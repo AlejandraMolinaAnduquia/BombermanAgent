@@ -148,6 +148,7 @@ class BombermanAgent(Agent):
         
         if not self.is_search_initialized:
             start_position = (self.pos[0], self.pos[1])
+            # Llamar a start_search con ambos parámetros, independientemente del tipo de algoritmo
             self.search_strategy.start_search(start_position, self.model.goal_position)
             self.is_search_initialized = True
         

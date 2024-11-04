@@ -9,8 +9,8 @@ class bfs(SearchStrategy):
         self.visited = set()
         self.step_count = 0
 
-    def start_search(self, start):
-        self.queue.append((start))
+    def start_search(self, start, goal=None):
+        self.queue.append((start, []))
 
     def explore_step(self, agent, diagonal=False):
         if not self.queue:

@@ -7,18 +7,20 @@ class dfs(SearchStrategy):
         self.stack = []
         self.visited = set()
         self.step_count = 0
+        self.goal = None  # Añadido para almacenar la meta
 
-    def start_search(self, start):
-        self.stack.append(start)
+    def start_search(self, start, goal=None):
+        self.stack.append((start, [start]))  # Almacena la posición inicial y el camino hasta ahora
+        self.goal = goal  # Asigna la meta si se proporciona
 
-    def explore_step(self, agent, diagonal = False):
+    def explore_step(self, agent, diagonal=False):
         if not self.stack:
             return None
         
         current, path = self.stack.pop()
 
         AgentArquitecture_in_cell = agent.model.grid[current[0]][current[1]]
-        if any(isinstance(a, GoalAgent) for a in AgentArquitecture_in_cell):
+        if self.goal is not None and any(isinstance(a, GoalAgent) for a in AgentArquitecture_in_cell):
             agent.path_to_exit = path
             agent.has_explored = True
             return None
@@ -34,7 +36,6 @@ class dfs(SearchStrategy):
                     (0, -1), (-1, -1), (-1, 0), (-1, 1)
                 ]
             else:
-                #direcciones = [(0, 1), (1, 0), (0, -1), (-1, 0)]
                 directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 
             directions.reverse()
