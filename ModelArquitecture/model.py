@@ -10,15 +10,17 @@ from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.globe import GlobeAgent
 from AgentArquitecture.road import RoadAgent
 from SearchesArquitecture.InformedSearches.astar import AStarSearch
+from SearchesArquitecture.InformedSearches.beamsearch import BeamSearch
 from Utils.dinamicTools import load_map, get_map_path
 
 class MazeModel(Model):
-    def __init__(self, width, height, map, search_strategy):
+    def __init__(self, width, height, map, search_strategy, beta: int = None):
         super().__init__()
         self.grid = MultiGrid(width, height, True)
         self.schedule = RandomActivation(self)
         self.globe_active = True
-        self.goal_position = None  # Inicializar la posición objetivo
+        self.goal_position = None
+        self.search_strategy = None
 
         if search_strategy == "DFS":
             search_strategy = dfs()
@@ -28,6 +30,8 @@ class MazeModel(Model):
             search_strategy = ucs()
         elif search_strategy == "A*":
             search_strategy = AStarSearch()
+        elif search_strategy == "Beam Search":
+            search_strategy = BeamSearch(beta)
 
         for y, row in enumerate(map):
             for x, cell in enumerate(row):
@@ -55,8 +59,7 @@ class MazeModel(Model):
                     goal = AgentIdentity.create_agent("goal", (x, y), self)
                     self.grid.place_agent(goal, (x, y))
                     self.schedule.add(goal)
-                    self.goal_position = (x, y)  # Asignar la posición del objetivo
-
+                    self.goal_position = (x, y) 
                 elif cell == "G":
                     globe = AgentIdentity.create_agent("globe", (x, y), self)
                     self.grid.place_agent(globe, (x, y))
@@ -82,13 +85,10 @@ class MazeModel(Model):
         return all(isinstance(agent, (RoadAgent, GoalAgent)) for agent in cell_content)
     
     def reset_game(self):
-        # Restablecer las posiciones iniciales de Bomberman, globos y otros elementos del mapa
         self.schedule = RandomActivation(self)
         self.grid = MultiGrid(self.grid.width, self.grid.height, True)
-
-        # Volver a colocar a Bomberman y a los globos en sus posiciones iniciales
         bomberman = BombermanAgent(self.next_id(), self, self.search_strategy)
-        self.grid.place_agent(bomberman, (1, 1))  # Cambia esta posición según sea necesario
+        self.grid.place_agent(bomberman, (1, 1)) 
         self.schedule.add(bomberman)
 
         for pos in self.initial_globe_positions:
@@ -96,7 +96,6 @@ class MazeModel(Model):
             self.grid.place_agent(globe, pos)
             self.schedule.add(globe)
 
-        # Cargar otros agentes, como caminos
         for x in range(self.grid.width):
             for y in range(self.grid.height):
                 if self.grid.is_cell_empty((x, y)):
