@@ -86,7 +86,7 @@ def create_server(map):
     "search_strategy": Choice(
         "Recorridos",
         value="A*",
-        choices=["BFS", "DFS", "UCS", "A*", "Beam Search"], 
+        choices=["BFS", "DFS", "UCS", "A*", "Beam Search", "Hill Climbing"], 
     ),
     "beta": Slider("Beta", value=4, min_value=1, max_value=4),
 }
