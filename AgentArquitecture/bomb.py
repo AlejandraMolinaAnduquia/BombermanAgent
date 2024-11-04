@@ -1,5 +1,5 @@
 from mesa import Agent
-from random import random 
+from random import random
 
 class BombAgent(Agent):
     def __init__(self, unique_id, model, position, destruction_power):
@@ -22,11 +22,11 @@ class BombAgent(Agent):
         from AgentArquitecture.explosion import ExplosionAgent
         from AgentArquitecture.metal import MetalAgent
         from AgentArquitecture.bomberman import BombermanAgent
-        from AgentArquitecture.globe import GlobeAgent  # Asegúrate de importar GlobeAgent
+        from AgentArquitecture.globe import GlobeAgent
+        from AgentArquitecture.road import RoadAgent
 
         print(f"Explosión de bomba en: {self.position} con poder de destrucción: {self.destruction_power}")
 
-        affected_positions = [self.position]
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
         for direction in directions:
@@ -41,42 +41,50 @@ class BombAgent(Agent):
 
                 for agent in agents_in_cell:
                     if isinstance(agent, MetalAgent):
-                        stop_explosion = True  # Detener la expansión si encuentra metal
+                        stop_explosion = True
                         break
                     elif isinstance(agent, RockAgent):
+                        # Guarda el número de orden de visita de la roca para el PowerupAgent o RoadAgent
+                        visit_order = getattr(agent, 'visit_order', None)
+
+                        # Remueve la roca y crea un Powerup o un camino en su lugar
                         self.model.grid.remove_agent(agent)
                         self.model.schedule.remove(agent)
-                        stop_explosion = True
-                        
-                        # Probabilidad de generar un comodín en la posición de la roca destruida
-                        if random() < 0.3:  # 30% de probabilidad
-                            powerup = PowerupAgent(self.model.next_id(), self.model)
-                            self.model.grid.place_agent(powerup, target_position)
+
+                        if random() < 0.3:
+                            # Crear el PowerupAgent con el visit_order de la roca
+                            powerup = PowerupAgent(self.model.next_id(), self.model, original_visit_order=visit_order)
+                            self.model.grid.place_agent(powerup, target_position)  
                             self.model.schedule.add(powerup)
-                            print(f"Comodín generado en la posición: {target_position}")
+                            print(f"Comodín generado en la posición: {target_position} con orden de visita {visit_order}")
+                        else:
+                            # Crear un camino en la posición de la roca destruida y asignarle el orden de visita
+                            road = RoadAgent(self.model.next_id(), self.model)
+                            road.visit_order = visit_order
+                            self.model.grid.place_agent(road, target_position)
+                            self.model.schedule.add(road)
+                            print(f"Camino creado en la posición: {target_position} con número de orden {visit_order}")
+
+                        stop_explosion = True
 
                     elif isinstance(agent, BombermanAgent):
                         self.model.grid.remove_agent(agent)
                         self.model.schedule.remove(agent)
-                        self.model.running = False  # Detener la simulación
+                        self.model.running = False
                         print(f"Bomberman ha sido alcanzado por la explosión en {target_position} y ha muerto. Simulación finalizada.")
                         stop_explosion = True
 
                     elif isinstance(agent, GlobeAgent):
                         self.model.grid.remove_agent(agent)
                         self.model.schedule.remove(agent)
-                        print(f"GlobeAgent destruido por la explosión en la posición {target_position}.")  # Mensaje de eliminación del globo
+                        print(f"GlobeAgent destruido por la explosión en la posición {target_position}.")
+                        stop_explosion = True
 
                 if stop_explosion:
-                    break  # Si el metal u otro obstáculo detiene la explosión, no continúa expandiéndose
+                    break
 
-                affected_positions.append(target_position)
-                
                 # Coloca un agente de explosión en la posición afectada
                 explosion = ExplosionAgent(self.model.next_id(), self.model, target_position, duration=1)
                 self.model.grid.place_agent(explosion, target_position)
                 self.model.schedule.add(explosion)
-
-        print(f"Área afectada por la explosión en el step actual: {affected_positions}")
-
 
