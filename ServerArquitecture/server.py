@@ -27,13 +27,13 @@ def agent_portrayal(agent):
     }
 
     if type(agent) is BombermanAgent:
-        portrayal["Shape"] = "Data/Images/bomberman.jpg"
+        portrayal["Shape"] = "Data/Images/bomberman.png"
         portrayal["Layer"] = 1
     elif type(agent) is GoalAgent:
         portrayal["Shape"] = "Data/Images/salida.jpg"
         portrayal["Layer"] = 0
     elif type(agent) is MetalAgent:
-        portrayal["Shape"] = "Data/Images/muro.jpg"
+        portrayal["Shape"] = "Data/Images/metal.jpg"
         portrayal["Color"] = "gray"
         portrayal["r"] = 1
         portrayal["Layer"] = 1
@@ -55,10 +55,10 @@ def agent_portrayal(agent):
         portrayal["r"] = 1
         portrayal["Layer"] = 0
     elif type(agent) is GlobeAgent:
-        portrayal["Shape"] = "Data/Images/globo.png"
+        portrayal["Shape"] = "Data/Images/globe.png"
         portrayal["Layer"] = 1
     elif type(agent) is BombAgent:
-        portrayal["Shape"] = "Data/Images/bomba.jpg"
+        portrayal["Shape"] = "Data/Images/bomba.png"
         portrayal["Layer"] = 1
     elif type(agent) is PowerupAgent:
         if agent.original_visit_order:
