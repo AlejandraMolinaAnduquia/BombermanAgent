@@ -56,13 +56,13 @@ def agent_portrayal(agent):
     elif type(agent) is GlobeAgent:
         portrayal["Shape"] = "Data/Images/globo.png"
         portrayal["Layer"] = 1
-    elif type(agent) is BombAgent:  # Añadir condición para BombAgent
+    elif type(agent) is BombAgent:  
         portrayal["Shape"] = "Data/Images/bomba.jpg"
         portrayal["Layer"] = 1
-    elif type(agent) is PowerupAgent:  # Añadir condición para PowerupAgent
+    elif type(agent) is PowerupAgent: 
         portrayal["Shape"] = "Data/Images/fuego.png"
         portrayal["Layer"] = 1
-    elif isinstance(agent, ExplosionAgent):  # Representación visual del agente de explosión
+    elif isinstance(agent, ExplosionAgent):  
         portrayal["Shape"] = "Data/Images/explosion.png"
         portrayal["Layer"] = 2
 
@@ -74,15 +74,16 @@ def create_server(map):
     grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 
     params = {
-        "height": height,
-        "width": width,
-        "map": map,
-        "search_strategy": Choice(
-            "Recorridos",
-            value="A*",
-            choices=["BFS", "DFS", "UCS", "A*"],
-        )
-    }
+    "height": height,
+    "width": width,
+    "map": map,
+    "search_strategy": Choice(
+        "Recorridos",
+        value="A*",
+        choices=["BFS", "DFS", "UCS", "A*", "Beam Search"], 
+    ),
+    "beta": Slider("Beta", value=4, min_value=1, max_value=4),
+}
 
     server = ModularServer(MazeModel, [grid], "Bomberman", params)
     server.port = 8521
