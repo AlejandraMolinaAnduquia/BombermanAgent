@@ -2,6 +2,7 @@ from SearchesArquitecture.searchStrategy import SearchStrategy
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.road import RoadAgent
 from AgentArquitecture.rock import RockAgent
+from AgentArquitecture.metal import MetalAgent
 from AgentArquitecture.globe import GlobeAgent
 
 class HillClimbing(SearchStrategy):
@@ -9,8 +10,8 @@ class HillClimbing(SearchStrategy):
         self.step_count = 0
         self.visited_nodes = set()  # Conjunto para almacenar los nodos visitados
         self.path_to_goal = []  # Almacena el camino hacia la meta
-        self.backtrack_stack = []  # Pila para niveles con nodos pendientes de visitar
-        self.current_level = 0  # Nivel actual de profundidad
+        self.current = None  # Nodo actual
+        self.goal = None  # Nodo objetivo
 
     def start_search(self, start, goal):
         """Inicia la búsqueda Hill Climbing desde el nodo de inicio."""
@@ -19,70 +20,75 @@ class HillClimbing(SearchStrategy):
         self.step_count = 0  # Resetea el contador de pasos de expansión
         self.visited_nodes.clear()  # Limpia los nodos visitados al iniciar la búsqueda
         self.path_to_goal.clear()  # Resetea el camino a la meta
-        self.backtrack_stack.clear()  # Resetea la pila de backtracking
-        self.current_level = 0
 
     def heuristic(self, position):
         """Define la heurística: distancia de Manhattan al objetivo."""
         return abs(position[0] - self.goal[0]) + abs(position[1] - self.goal[1])
 
     def explore_step(self, agent):
-        """Expande el siguiente nodo en el algoritmo de Hill Climbing."""
+        """Expande el siguiente nodo en el algoritmo de Hill Climbing con backtracking."""
         self.step_count += 1
-        print(f"Paso {self.step_count}: Evaluando nodo {self.current} en nivel {self.current_level}")
+        print(f"Paso {self.step_count}: Evaluando nodo {self.current}")
+
+        # Verifica que el nodo actual no sea None y esté dentro de los límites
+        if self.current is None or not (0 <= self.current[0] < agent.model.grid.width) or not (0 <= self.current[1] < agent.model.grid.height):
+            print("Nodo actual no válido:", self.current)
+            return None
 
         # Marca la celda con el nivel actual si no ha sido visitada
         if self.current not in self.visited_nodes:
-            agent.model.grid[self.current[0]][self.current[1]][0].visit_order = self.step_count
-            self.visited_nodes.add(self.current)  # Agrega el nodo al conjunto de visitados
-            self.path_to_goal.append(self.current)  # Agrega el nodo actual al camino
+            cell = agent.model.grid[self.current[0]][self.current[1]]
+            if cell is not None:
+                cell[0].visit_order = self.step_count
+                self.visited_nodes.add(self.current)
+                self.path_to_goal.append(self.current)
 
         # Verifica si el nodo actual es la meta
         agents_in_cell = agent.model.grid[self.current[0]][self.current[1]]
         if any(isinstance(a, GoalAgent) for a in agents_in_cell):
-            agent.path_to_exit = self.path_to_goal  # Asigna el camino encontrado hasta la meta
+            agent.path_to_exit = self.path_to_goal
             agent.has_explored = True
             print("Meta alcanzada en:", self.current)
             return None
 
-        # Genera los vecinos del nodo actual
+        # Si no se ha alcanzado la meta, continúa explorando
         neighbors = self.get_neighbors(agent, self.current)
-
-        # Encuentra el vecino con la menor heurística
-        next_node = None
-        min_heuristic_value = float('inf')
-        level_has_unvisited_neighbors = False
-
+        
+        # Filtra vecinos válidos permitiendo RockAgent y GlobeAgent pero no MetalAgent
+        valid_neighbors = []
         for neighbor in neighbors:
-            if neighbor not in self.visited_nodes:  # Ignora vecinos ya visitados
-                h_value = self.heuristic(neighbor)
-                if h_value < min_heuristic_value:
-                    min_heuristic_value = h_value
-                    next_node = neighbor
-                    level_has_unvisited_neighbors = True
+            agents_at_neighbor = agent.model.grid[neighbor[0]][neighbor[1]]
+            if neighbor not in self.visited_nodes:
+                if any(isinstance(a, MetalAgent) for a in agents_at_neighbor):
+                    continue  # No considera nodos con MetalAgent
+                else:
+                    # Permite nodos con RockAgent o GlobeAgent
+                    valid_neighbors.append(neighbor)
 
-        # Si no hay un mejor vecino, se ha llegado a un óptimo local
-        if not level_has_unvisited_neighbors:
-            print("Se ha llegado a un óptimo local en:", self.current)
-            # Si estamos en un nivel sin vecinos no visitados, retrocede al último nivel con nodos sin visitar
-            if self.backtrack_stack:
-                last_level_with_nodes = self.backtrack_stack.pop()
-                self.current, self.current_level = last_level_with_nodes
-                print(f"Retrocediendo a nivel {self.current_level} en nodo {self.current}")
-                return self.current
+        if valid_neighbors:
+            # Selecciona el vecino con la mejor heurística entre los válidos
+            next_node = min(valid_neighbors, key=lambda neighbor: self.heuristic(neighbor))
+            self.current = next_node
+            print(f"Moviendo a {self.current} basado en la heurística")
+        else:
+            # No hay vecinos válidos, inicia retroceso
+            print("No hay vecinos válidos, iniciando retroceso...")
+            if self.path_to_goal:
+                # Deshace el último movimiento en el camino hacia la meta
+                self.path_to_goal.pop()  # Elimina el último nodo del camino actual
+                if self.path_to_goal:
+                    # Si aún quedan nodos en el camino, vuelve al anterior
+                    self.current = self.path_to_goal[-1]
+                    print(f"Retrocediendo a {self.current}")
+                else:
+                    # Si no quedan nodos, ha vuelto al inicio y no hay rutas posibles
+                    print("No hay más nodos por retroceder. Fin de la búsqueda.")
+                    self.current = None
             else:
-                # Si no hay más niveles en la pila, termina la búsqueda
-                agent.path_to_exit = self.path_to_goal  # Devuelve el camino recorrido hasta el óptimo local
-                return None
+                print("Retroceso imposible, ningún camino alternativo disponible.")
+                self.current = None
 
-        # Si hay vecinos, guarda el nivel actual en la pila si no está completamente explorado
-        if self.current_level == len(self.backtrack_stack):
-            self.backtrack_stack.append((self.current, self.current_level))
-
-        # Actualiza el nodo actual y el nivel
-        self.current = next_node
-        self.current_level += 1
-        return self.current
+        return None
 
     def get_neighbors(self, agent, current):
         """Obtiene los vecinos válidos del nodo actual."""
