@@ -6,20 +6,19 @@ import random
 class GlobeAgent(Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
-        self.awaiting_step_confirmation = False  
+        self.awaiting_step_confirmation = False
+        self.previous_visit_order = None  # Almacena el número de orden de la casilla de camino
 
     def step(self):
-        bomberman = self.get_bomberman_agent()
-        if bomberman is None:
-            return  # Si no hay Bomberman, salir del método
+        if self.pos is None:
+            return
 
-        bomberman_position = bomberman.pos
-        if bomberman_position is None:
-            return  # Si la posición de Bomberman es None, salir del método
+        bomberman = self.get_bomberman_agent()
+        if bomberman is None or bomberman.pos is None:
+            return
 
         if self.awaiting_step_confirmation:
-            # Revisar colisión normal y colisión cruzada
-            if self.check_collision(bomberman_position) or self.check_cross_collision(self.pos, bomberman):
+            if self.check_collision(bomberman.pos) or self.check_cross_collision(self.pos, bomberman):
                 self.handle_collision(bomberman)
                 return 
             self.awaiting_step_confirmation = False
@@ -33,7 +32,19 @@ class GlobeAgent(Agent):
                 new_position = (self.pos[0] + direction[0], self.pos[1] + direction[1])
 
                 if not self.model.grid.out_of_bounds(new_position) and self.model.is_cell_empty(new_position):
-                    self.model.grid.place_agent(RoadAgent(self.model.next_id(), self.model), self.pos)
+                    # Crear un camino en la posición actual del globo antes de moverse
+                    current_cell_agents = self.model.grid.get_cell_list_contents([self.pos])
+                    for agent in current_cell_agents:
+                        if isinstance(agent, RoadAgent):
+                            # Guarda el número de visita si la casilla actual es un camino numerado
+                            self.previous_visit_order = agent.visit_order
+
+                    # Colocar un camino en la posición actual del globo antes de moverse
+                    road = RoadAgent(self.model.next_id(), self.model)
+                    road.visit_order = self.previous_visit_order  # Mantiene el número de orden si lo tenía
+                    self.model.grid.place_agent(road, self.pos)
+
+                    # Mueve el globo a la nueva posición
                     self.model.grid.move_agent(self, new_position)
                     self.awaiting_step_confirmation = True
                     moved = True
@@ -43,18 +54,11 @@ class GlobeAgent(Agent):
                 print("No se pudo mover el globo a ninguna nueva posición")
 
     def handle_collision(self, bomberman):
-        """Detiene la simulación si ocurre una colisión entre GlobeAgent y Bomberman."""
-        # Guarda la posición de la colisión
         collision_position = bomberman.pos
-
-        # Elimina a Bomberman del modelo y detiene la simulación
         self.model.grid.remove_agent(bomberman)
         self.model.schedule.remove(bomberman)
-        self.model.running = False  # Detiene la simulación
-
-        # Imprime un mensaje con la posición de la colisión
+        self.model.running = False
         print(f"Colisión detectada entre GlobeAgent y BombermanAgent en la posición {collision_position}. Bomberman eliminado y simulación finalizada.")
-
 
     def get_bomberman_agent(self):
         for agent in self.model.schedule.agents:

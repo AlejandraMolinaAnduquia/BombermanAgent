@@ -41,32 +41,38 @@ def agent_portrayal(agent):
         if agent.visit_order:
             portrayal["text"] = str(agent.visit_order)
             portrayal["text_color"] = "black" 
-        if agent.is_visited:
-            portrayal["Color"] = "yellow"
-        else:
-            portrayal["Color"] = "green"
+        # Cambiar el color a amarillo si es parte del camino óptimo visitado
+        portrayal["Color"] = "yellow" if agent.is_visited else "green"
         portrayal["Shape"] = "rect"
         portrayal["r"] = 1
         portrayal["Layer"] = 0
     elif type(agent) is RockAgent:
+        if agent.visit_order:
+            portrayal["text"] = str(agent.visit_order)
+            portrayal["text_color"] = "black" 
         portrayal["Shape"] = "Data/Images/roca.jpg"
         portrayal["Color"] = "firebrick"
         portrayal["r"] = 1
-        portrayal["Layer"] = 1
+        portrayal["Layer"] = 0
     elif type(agent) is GlobeAgent:
         portrayal["Shape"] = "Data/Images/globo.png"
         portrayal["Layer"] = 1
-    elif type(agent) is BombAgent:  
+    elif type(agent) is BombAgent:
         portrayal["Shape"] = "Data/Images/bomba.jpg"
         portrayal["Layer"] = 1
-    elif type(agent) is PowerupAgent: 
+    elif type(agent) is PowerupAgent:
+        if agent.original_visit_order:
+            portrayal["text"] = str(agent.original_visit_order)
+            portrayal["text_color"] = "black" 
         portrayal["Shape"] = "Data/Images/fuego.png"
-        portrayal["Layer"] = 1
-    elif isinstance(agent, ExplosionAgent):  
+        portrayal["Layer"] = 0
+        
+    elif isinstance(agent, ExplosionAgent):
         portrayal["Shape"] = "Data/Images/explosion.png"
         portrayal["Layer"] = 2
 
     return portrayal
+
 
 def create_server(map):
     height = len(map)
