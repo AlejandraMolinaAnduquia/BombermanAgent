@@ -2,6 +2,8 @@ from collections import deque
 from SearchesArquitecture.searchStrategy import SearchStrategy
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.road import RoadAgent
+from AgentArquitecture.rock import RockAgent
+from AgentArquitecture.globe import GlobeAgent
 
 class bfs(SearchStrategy):
     def __init__(self):
@@ -48,7 +50,7 @@ class bfs(SearchStrategy):
                     and new_position not in self.visited
                 ):
                     AgentArquitecture_in_new_cell = agent.model.grid[new_x][new_y]
-                    if all(isinstance(a, (RoadAgent, GoalAgent)) for a in AgentArquitecture_in_new_cell):
+                    if all(isinstance(a, (RoadAgent, GoalAgent, RockAgent, GlobeAgent)) for a in AgentArquitecture_in_new_cell):
                         self.queue.append((new_position, path + [new_position]))
 
         return current

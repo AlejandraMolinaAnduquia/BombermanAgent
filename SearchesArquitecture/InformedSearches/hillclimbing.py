@@ -82,6 +82,7 @@ class HillClimbing(SearchStrategy):
     def get_neighbors(self, agent, current):
         """Obtiene los vecinos válidos del nodo actual."""
         neighbors = []
+        # Prioridad: Izquierda, arriba, derecha, abajo
         directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 
         for direction in directions:
