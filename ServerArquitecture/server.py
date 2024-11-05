@@ -30,6 +30,9 @@ def agent_portrayal(agent):
         portrayal["Shape"] = "Data/Images/bomberman.png"
         portrayal["Layer"] = 1
     elif type(agent) is GoalAgent:
+        if agent.visit_order:
+            portrayal["text"] = str(agent.visit_order)
+            portrayal["text_color"] = "black" 
         portrayal["Shape"] = "Data/Images/salida.jpg"
         portrayal["Layer"] = 0
     elif type(agent) is MetalAgent:
@@ -55,6 +58,7 @@ def agent_portrayal(agent):
         portrayal["r"] = 1
         portrayal["Layer"] = 0
     elif type(agent) is GlobeAgent:
+        
         portrayal["Shape"] = "Data/Images/globe.png"
         portrayal["Layer"] = 1
     elif type(agent) is BombAgent:

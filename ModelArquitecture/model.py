@@ -63,7 +63,7 @@ class MazeModel(Model):
                     self.grid.place_agent(goal, (x, y))
                     self.schedule.add(goal)
                     self.goal_position = (x, y) 
-                elif cell == "G":
+                elif cell == "C_g":
                     globe = AgentIdentity.create_agent("globe", (x, y), self)
                     self.grid.place_agent(globe, (x, y))
                     self.schedule.add(globe)
