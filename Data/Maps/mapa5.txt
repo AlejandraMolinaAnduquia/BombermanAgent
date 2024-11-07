@@ -3,8 +3,8 @@ C_b,M,C,C,C,M,M,C,M,C
 C,C,R,R,C,C,C,R,R,C
 C,M,C,C,R,M,R,R,C,M
 C,R,C,M,C,C,R,C,C,R
-C,M,C,C_g,C,M,C,M,R,C
+C,M,C,C,C,M,C,M,R,C
 R,C,C,R,C,C,C,C,C,R
 R,C,M,C,C,R,C,R,R,M
-C,C,C,R,C,C,C,M,C_g,R_s
+C,C,C,R,C,C,C,M,C,R_s
 R,C,M,C,C,R,C,C,C,C

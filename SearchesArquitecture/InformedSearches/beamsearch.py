@@ -3,6 +3,7 @@ from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.road import RoadAgent
 from AgentArquitecture.rock import RockAgent
 from AgentArquitecture.globe import GlobeAgent
+import math
 
 class BeamSearch(SearchStrategy):
     """
@@ -17,17 +18,19 @@ class BeamSearch(SearchStrategy):
         step_count (int): Contador de pasos de expansión, para visualizar el progreso.
     """
 
-    def __init__(self, beam_width=3):
+    def __init__(self, beam_width=3, heuristic='Manhattan'):
         """
-        Inicializa la búsqueda en haz con un ancho especificado.
+        Inicializa la búsqueda en haz con un ancho especificado y la heurística elegida.
         
         Args:
             beam_width (int): Número de caminos a mantener en la exploración en cada paso.
+            heuristic (str): Tipo de heurística, puede ser 'Manhattan' o 'Euclidean'.
         """
         self.beam_width = beam_width  # Número máximo de caminos a explorar por paso
         self.open_set = []  # Lista de caminos en el haz actual
         self.visited = set()  # Nodos ya explorados
         self.step_count = 0  # Contador de pasos de expansión
+        self.heuristic = heuristic  # Heurística seleccionada para evaluar caminos
 
     def start_search(self, start, goal):
         """
@@ -44,6 +47,32 @@ class BeamSearch(SearchStrategy):
         self.open_set = [[start]]  # Inicializa el haz con un camino que contiene solo el nodo de inicio
         self.visited = set()  # Reinicia los nodos visitados
         self.step_count = 0  # Reinicia el contador de pasos de expansión
+
+    def manhattan_distance(self, pos1, pos2):
+        """
+        Calcula la distancia de Manhattan entre dos posiciones.
+        
+        Args:
+            pos1 (tuple): Coordenadas del primer punto.
+            pos2 (tuple): Coordenadas del segundo punto.
+        
+        Returns:
+            int: Distancia de Manhattan entre las posiciones.
+        """
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+
+    def euclidean_distance(self, pos1, pos2):
+        """
+        Calcula la distancia Euclidiana entre dos posiciones.
+        
+        Args:
+            pos1 (tuple): Coordenadas del primer punto.
+            pos2 (tuple): Coordenadas del segundo punto.
+        
+        Returns:
+            float: Distancia Euclidiana entre las posiciones.
+        """
+        return math.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2)
 
     def explore_step(self, agent):
         """
@@ -107,12 +136,15 @@ class BeamSearch(SearchStrategy):
 
     def evaluate_path(self, path):
         """
-        Evalúa un camino según su longitud (por defecto, la longitud más corta se considera mejor).
+        Evalúa un camino usando la heurística seleccionada para el objetivo.
         
         Args:
-            path (list): Lista de posiciones que componen el camino.
+            path (list): Lista de posiciones en el camino actual.
         
         Returns:
-            int: Valor heurístico del camino, en este caso, su longitud.
+            float: Valor heurístico del camino (más bajo es mejor).
         """
-        return len(path)  # La evaluación predeterminada es la longitud del camino
+        if self.heuristic == 'Manhattan':
+            return self.manhattan_distance(path[-1], self.goal)
+        else:
+            return self.euclidean_distance(path[-1], self.goal)

@@ -106,13 +106,11 @@ def create_server(map):
         ModularServer: El servidor configurado para la simulación.
     """
     # Dimensiones del mapa
+
     height = len(map)
     width = len(map[0])
-
-    # Configura la grilla de visualización para los agentes
     grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 
-    # Parámetros ajustables del servidor
     params = {
         "height": height,
         "width": width,
@@ -122,9 +120,15 @@ def create_server(map):
             value="A*",
             choices=["BFS", "DFS", "UCS", "A*", "Beam Search", "Hill Climbing"], 
         ),
-        "beta": Slider("Beta", value=4, min_value=1, max_value=4),  # Control de ancho para Beam Search
+        "distance_metric": Choice(  # Nuevo parámetro para seleccionar la distancia
+            "Métrica de Distancia",
+            value="Manhattan",
+            choices=["Manhattan", "Euclidean"],
+        ),
+        "beta": Slider("Beta", value=4, min_value=1, max_value=4),
     }
 
+    
     # Crea el servidor de la simulación con el modelo, grilla y parámetros
     server = ModularServer(MazeModel, [grid], "Bomberman", params)
     server.port = 8521
