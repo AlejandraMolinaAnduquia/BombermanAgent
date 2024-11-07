@@ -27,12 +27,14 @@ class HillClimbing(SearchStrategy):
         Args:
             heuristic (str): Tipo de heurística, puede ser 'Manhattan' o 'Euclidean'.
         """
-        self.step_count = 0  # Contador de pasos para visualizar el orden de expansión
-        self.visited_nodes = set()  # Conjunto de nodos visitados
-        self.path_to_goal = []  # Camino actual explorado
-        self.current = None  # Nodo actual
-        self.goal = None  # Nodo objetivo
-        self.heuristic = heuristic  # Heurística seleccionada para la búsqueda
+        self.step_count = 0
+        self.visited_nodes = set()
+        self.path_to_goal = []
+        self.current = None
+        self.goal = None
+        self.heuristic = heuristic
+        self.retrogress_count = 0
+        self.optimal_path = []
 
     def start_search(self, start, goal):
         """
@@ -41,149 +43,125 @@ class HillClimbing(SearchStrategy):
         Args:
             start (tuple): Coordenadas del nodo de inicio.
             goal (tuple): Coordenadas del nodo objetivo.
-        
-        Este método reinicia los contadores, el nodo actual, y el camino explorado.
         """
         self.goal = goal
-        self.current = start  # Define el nodo inicial como actual
-        self.step_count = 0  # Resetea el contador de pasos
-        self.visited_nodes.clear()  # Limpia el conjunto de nodos visitados
-        self.path_to_goal.clear()  # Reinicia el camino almacenado
+        self.current = start
+        self.step_count = 0
+        self.visited_nodes.clear()
+        self.path_to_goal.clear()
+        self.optimal_path.clear()
 
     def manhattan_distance(self, position):
-        """
-        Calcula la distancia de Manhattan entre la posición actual y la meta.
-        
-        Args:
-            position (tuple): Coordenadas de la posición actual.
-        
-        Returns:
-            int: Distancia de Manhattan desde la posición actual hasta la meta.
-        """
+        """Calcula la distancia de Manhattan entre la posición actual y la meta."""
         return abs(position[0] - self.goal[0]) + abs(position[1] - self.goal[1])
 
     def euclidean_distance(self, position):
-        """
-        Calcula la distancia Euclidiana entre la posición actual y la meta.
-        
-        Args:
-            position (tuple): Coordenadas de la posición actual.
-        
-        Returns:
-            float: Distancia Euclidiana desde la posición actual hasta la meta.
-        """
+        """Calcula la distancia Euclidiana entre la posición actual y la meta."""
         return math.sqrt((position[0] - self.goal[0]) ** 2 + (position[1] - self.goal[1]) ** 2)
 
     def heuristica(self, position):
-        """
-        Calcula la heurística para un nodo dado, seleccionando la distancia de Manhattan o Euclidiana.
-        
-        Args:
-            position (tuple): Coordenadas del nodo actual.
-        
-        Returns:
-            float: Valor heurístico según la distancia seleccionada.
-        """
-        if self.heuristic == 'Manhattan':
-            return self.manhattan_distance(position)
-        else:
-            return self.euclidean_distance(position)
+        """Calcula la heurística para un nodo dado."""
+        return self.manhattan_distance(position) if self.heuristic == 'Manhattan' else self.euclidean_distance(position)
 
     def explore_step(self, agent):
         """
-        Expande el siguiente nodo en la búsqueda Hill Climbing con retroceso. Evalúa vecinos y retrocede si necesario.
-        
-        Args:
-            agent (Agent): Agente que ejecuta la búsqueda en el entorno de modelado.
-        
-        Returns:
-            None
+        Expande el siguiente nodo en la búsqueda Hill Climbing. Al llegar al objetivo, recalcula el camino óptimo.
         """
+        if agent.has_explored:
+            # Bomberman sigue el camino óptimo después de recalcularlo
+            if agent.optimal_path:
+                next_step = agent.optimal_path.pop(0)
+                self.current = next_step
+                print(f"Moviéndose a {self.current} en el camino óptimo.")
+            return
+
         self.step_count += 1
         print(f"Paso {self.step_count}: Evaluando nodo {self.current}")
 
-        # Valida el nodo actual y lo marca como visitado si es necesario
-        if self.current is None or not (0 <= self.current[0] < agent.model.grid.width) or not (0 <= self.current[1] < agent.model.grid.height):
-            print("Nodo actual no válido:", self.current)
-            return None
-
         if self.current not in self.visited_nodes:
-            # Marca el nodo con el orden de visita y lo agrega al conjunto de nodos visitados
             cell = agent.model.grid[self.current[0]][self.current[1]]
             if cell is not None:
-                cell[0].visit_order = self.step_count  # Marca el nodo con el orden de visita
-                self.visited_nodes.add(self.current)  # Añade el nodo a visitados
-                self.path_to_goal.append(self.current)  # Añade el nodo al camino
+                cell[0].visit_order = self.step_count
+                self.visited_nodes.add(self.current)
+                self.path_to_goal.append(self.current)
 
-        # Verifica si el nodo actual es la meta
         agents_in_cell = agent.model.grid[self.current[0]][self.current[1]]
         if any(isinstance(a, GoalAgent) for a in agents_in_cell):
-            agent.path_to_exit = self.path_to_goal
+            # Recalcular camino óptimo usando solo nodos expandidos
+            agent.path_to_exit = self.calculate_optimal_path(agent)
+            agent.optimal_path = agent.path_to_exit[:]
             agent.has_explored = True
-            print("Meta alcanzada en:", self.current)
-            return None
+            print("Meta alcanzada. Camino óptimo recalculado:", agent.optimal_path)
+            return
 
-        # Genera vecinos válidos del nodo actual
         neighbors = self.get_neighbors(agent, self.current)
-        valid_neighbors = []
-        for neighbor in neighbors:
-            agents_at_neighbor = agent.model.grid[neighbor[0]][neighbor[1]]
-            if neighbor not in self.visited_nodes:
-                if any(isinstance(a, MetalAgent) for a in agents_at_neighbor):
-                    continue  # Omite vecinos bloqueados por MetalAgent
-                else:
-                    valid_neighbors.append(neighbor)  # Agrega vecinos válidos
+        valid_neighbors = [n for n in neighbors if n not in self.visited_nodes]
 
         if valid_neighbors:
-            # Selecciona el vecino con la menor heurística (más cercano al objetivo)
             next_node = min(valid_neighbors, key=lambda neighbor: self.heuristica(neighbor))
-            self.current = next_node  # Actualiza el nodo actual al mejor vecino
+            self.current = next_node
             print(f"Moviendo a {self.current} basado en la heurística")
         else:
-            # Retrocede si no hay vecinos válidos
             print("No hay vecinos válidos, iniciando retroceso...")
-            if self.path_to_goal:
-                self.path_to_goal.pop()  # Elimina el último nodo del camino
-                if self.path_to_goal:
-                    self.current = self.path_to_goal[-1]  # Retrocede al nodo anterior
-                    print(f"Retrocediendo a {self.current}")
-                else:
-                    print("No hay más nodos por retroceder. Fin de la búsqueda.")
-                    self.current = None
-            else:
-                print("Retroceso imposible, ningún camino alternativo disponible.")
-                self.current = None
+            self.retrogress(agent)
 
-        return None
-
-    def get_neighbors(self, agent, current):
+    def calculate_optimal_path(self, agent):
         """
-        Obtiene los vecinos válidos (caminos, rocas, globos, y el objetivo) del nodo actual.
+        Calcula el camino óptimo directo desde el nodo inicial hasta el objetivo
+        usando solo los nodos expandidos.
         
         Args:
-            agent (Agent): Agente que ejecuta la búsqueda en el entorno de modelado.
-            current (tuple): Coordenadas del nodo actual.
-        
+            agent (Agent): Agente Bomberman.
+
         Returns:
-            list: Lista de posiciones vecinas válidas.
+            list: Camino óptimo recalculado desde el inicio hasta el objetivo usando nodos expandidos.
         """
+        start = self.path_to_goal[0]  # Nodo inicial
+        queue = [(start, [start])]
+        visited = set()
+
+        while queue:
+            current, path = queue.pop(0)
+            if current in visited:
+                continue
+            visited.add(current)
+
+            if current == self.goal:
+                return path  # Camino directo encontrado
+
+            for neighbor in self.get_neighbors(agent, current):
+                if neighbor not in visited and neighbor in self.visited_nodes:
+                    queue.append((neighbor, path + [neighbor]))
+
+        return []  # Devuelve un camino vacío si no se encuentra
+
+    def retrogress(self, agent):
+        """Retrocede al primer nodo en `path_to_goal` que tenga un vecino válido."""
+        for node in self.path_to_goal:
+            self.current = node
+            neighbors = self.get_neighbors(agent, self.current)
+            valid_neighbors = [n for n in neighbors if n not in self.visited_nodes]
+            if valid_neighbors:
+                next_node = min(valid_neighbors, key=lambda neighbor: self.heuristica(neighbor))
+                self.current = next_node
+                print(f"Retrocediendo a {self.current} desde nodo {node}")
+                self.retrogress_count += 1
+                return
+        print("No hay más nodos por retroceder. Fin de la búsqueda.")
+        self.current = None
+
+    def get_neighbors(self, agent, current):
+        """Obtiene los vecinos válidos del nodo actual con prioridad: Izquierda, Arriba, Derecha, Abajo."""
         neighbors = []
-
-        # Prioridad: Izquierda, arriba, derecha, abajo
-        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Direcciones ortogonales
-
-
+        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Prioridad: Izquierda, Arriba, Derecha, Abajo
         for direction in directions:
             new_x, new_y = current[0] + direction[0], current[1] + direction[1]
             new_position = (new_x, new_y)
-
             if (
                 0 <= new_x < agent.model.grid.width
                 and 0 <= new_y < agent.model.grid.height
             ):
-                # Solo incluye posiciones con caminos, rocas, globos o el objetivo
                 agents_in_new_cell = agent.model.grid[new_x][new_y]
                 if all(isinstance(agent, (RoadAgent, GoalAgent, RockAgent, GlobeAgent)) for agent in agents_in_new_cell):
                     neighbors.append(new_position)
-
         return neighbors  # Devuelve los vecinos válidos
