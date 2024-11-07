@@ -1,6 +1,8 @@
 from SearchesArquitecture.searchStrategy import SearchStrategy
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.road import RoadAgent
+from AgentArquitecture.rock import RockAgent
+from AgentArquitecture.globe import GlobeAgent
 
 class dfs(SearchStrategy):
     """
@@ -89,8 +91,9 @@ class dfs(SearchStrategy):
                     and new_position not in self.visited
                 ):
                     AgentArquitecture_in_new_cell = agent.model.grid[new_x][new_y]
-                    # Solo se añaden nodos que contienen agentes RoadAgent o GoalAgent
-                    if all(isinstance(a, (RoadAgent, GoalAgent)) for a in AgentArquitecture_in_new_cell):
+
+                    # Solo se añaden nodos que contienen agentes RoadAgent, GoalAgent, RockAgent, GlobeAgent
+                    if all(isinstance(a, (RoadAgent, GoalAgent, RockAgent, GlobeAgent)) for a in AgentArquitecture_in_new_cell):
                         self.stack.append((new_position, path + [new_position]))
 
         return current  # Devuelve el nodo expandido

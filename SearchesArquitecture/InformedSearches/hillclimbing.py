@@ -135,7 +135,10 @@ class HillClimbing(SearchStrategy):
             list: Lista de posiciones vecinas válidas.
         """
         neighbors = []
+
+        # Prioridad: Izquierda, arriba, derecha, abajo
         directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Direcciones ortogonales
+
 
         for direction in directions:
             new_x, new_y = current[0] + direction[0], current[1] + direction[1]

@@ -1,6 +1,8 @@
 from SearchesArquitecture.searchStrategy import SearchStrategy
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.road import RoadAgent
+from AgentArquitecture.rock import RockAgent
+from AgentArquitecture.globe import GlobeAgent
 import heapq
 
 class ucs(SearchStrategy):
@@ -102,8 +104,9 @@ class ucs(SearchStrategy):
                     and new_position not in self.visited
                 ):
                     AgentArquitecture_in_new_cell = agent.model.grid[new_x][new_y]
-                    # Permite solo nodos de tipo RoadAgent o GoalAgent
-                    if all(isinstance(a, (RoadAgent, GoalAgent)) for a in AgentArquitecture_in_new_cell):
+
+                    # Permite solo nodos de tipo RoadAgent, GoalAgent, RockAgent, GlobeAgent
+                    if all(isinstance(a, (RoadAgent, GoalAgent, RockAgent, GlobeAgent)) for a in AgentArquitecture_in_new_cell):
                         # Calcula el nuevo costo acumulado al nodo vecino
                         new_cost = current_cost + (13 if is_diagonal else 10)
                         if new_position not in self.cost_so_far or new_cost < self.cost_so_far[new_position]:
