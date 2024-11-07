@@ -5,6 +5,6 @@ C,M,C,C,C,M,R,C,C,M
 R,C,C,M,C,C,R,C,R,C
 C,M,R,C,C,M,C,M,C,C
 R,M,C,R,C,C,C,C,C,R
-R,C,M,C,G,R,C,R,C,M
+R,C,M,C,C_g,R,C,R,C,M
 C,M,R,R,C,C,C,M,C,R
 M,R_s,R,C,C,R,C,C,R,C

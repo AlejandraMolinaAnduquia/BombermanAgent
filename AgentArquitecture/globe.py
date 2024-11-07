@@ -8,6 +8,8 @@ class GlobeAgent(Agent):
         super().__init__(unique_id, model)
         self.awaiting_step_confirmation = False
         self.previous_visit_order = None  # Almacena el número de orden de la casilla de camino
+        self.visit_order = None
+        self.is_visited = False
 
     def step(self):
         if self.pos is None:
