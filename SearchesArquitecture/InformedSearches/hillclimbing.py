@@ -4,11 +4,12 @@ from AgentArquitecture.road import RoadAgent
 from AgentArquitecture.rock import RockAgent
 from AgentArquitecture.metal import MetalAgent
 from AgentArquitecture.globe import GlobeAgent
+import math
 
 class HillClimbing(SearchStrategy):
     """
     Implementa el algoritmo de Hill Climbing con retroceso. Este enfoque selecciona en cada paso el vecino
-    que maximiza la heurística (distancia de Manhattan al objetivo), y retrocede si no encuentra una mejor opción.
+    que maximiza la heurística (distancia de Manhattan o Euclidiana al objetivo), y retrocede si no encuentra una mejor opción.
     
     Atributos:
         step_count (int): Número de pasos de expansión, usado para visualizar el progreso.
@@ -16,17 +17,22 @@ class HillClimbing(SearchStrategy):
         path_to_goal (list): Lista de nodos en el camino explorado hasta el momento.
         current (tuple): Nodo actual en el proceso de exploración.
         goal (tuple): Nodo objetivo de la búsqueda.
+        heuristic (str): Tipo de heurística seleccionada, puede ser 'Manhattan' o 'Euclidean'.
     """
 
-    def __init__(self):
+    def __init__(self, heuristic='Manhattan'):
         """
         Inicializa los atributos necesarios para la búsqueda Hill Climbing.
+        
+        Args:
+            heuristic (str): Tipo de heurística, puede ser 'Manhattan' o 'Euclidean'.
         """
         self.step_count = 0  # Contador de pasos para visualizar el orden de expansión
         self.visited_nodes = set()  # Conjunto de nodos visitados
         self.path_to_goal = []  # Camino actual explorado
         self.current = None  # Nodo actual
         self.goal = None  # Nodo objetivo
+        self.heuristic = heuristic  # Heurística seleccionada para la búsqueda
 
     def start_search(self, start, goal):
         """
@@ -44,17 +50,44 @@ class HillClimbing(SearchStrategy):
         self.visited_nodes.clear()  # Limpia el conjunto de nodos visitados
         self.path_to_goal.clear()  # Reinicia el camino almacenado
 
-    def heuristic(self, position):
+    def manhattan_distance(self, position):
         """
-        Calcula la heurística para un nodo dado: la distancia de Manhattan al objetivo.
+        Calcula la distancia de Manhattan entre la posición actual y la meta.
+        
+        Args:
+            position (tuple): Coordenadas de la posición actual.
+        
+        Returns:
+            int: Distancia de Manhattan desde la posición actual hasta la meta.
+        """
+        return abs(position[0] - self.goal[0]) + abs(position[1] - self.goal[1])
+
+    def euclidean_distance(self, position):
+        """
+        Calcula la distancia Euclidiana entre la posición actual y la meta.
+        
+        Args:
+            position (tuple): Coordenadas de la posición actual.
+        
+        Returns:
+            float: Distancia Euclidiana desde la posición actual hasta la meta.
+        """
+        return math.sqrt((position[0] - self.goal[0]) ** 2 + (position[1] - self.goal[1]) ** 2)
+
+    def heuristica(self, position):
+        """
+        Calcula la heurística para un nodo dado, seleccionando la distancia de Manhattan o Euclidiana.
         
         Args:
             position (tuple): Coordenadas del nodo actual.
         
         Returns:
-            int: Distancia de Manhattan desde el nodo actual hasta el nodo objetivo.
+            float: Valor heurístico según la distancia seleccionada.
         """
-        return abs(position[0] - self.goal[0]) + abs(position[1] - self.goal[1])
+        if self.heuristic == 'Manhattan':
+            return self.manhattan_distance(position)
+        else:
+            return self.euclidean_distance(position)
 
     def explore_step(self, agent):
         """
@@ -103,7 +136,7 @@ class HillClimbing(SearchStrategy):
 
         if valid_neighbors:
             # Selecciona el vecino con la menor heurística (más cercano al objetivo)
-            next_node = min(valid_neighbors, key=lambda neighbor: self.heuristic(neighbor))
+            next_node = min(valid_neighbors, key=lambda neighbor: self.heuristica(neighbor))
             self.current = next_node  # Actualiza el nodo actual al mejor vecino
             print(f"Moviendo a {self.current} basado en la heurística")
         else:

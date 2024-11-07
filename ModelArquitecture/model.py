@@ -14,6 +14,7 @@ from SearchesArquitecture.InformedSearches.astar import AStarSearch
 from SearchesArquitecture.InformedSearches.beamsearch import BeamSearch
 from SearchesArquitecture.InformedSearches.hillclimbing import HillClimbing
 from Utils.dinamicTools import load_map, get_map_path
+from SearchesArquitecture.InformedSearches.astar import AStarSearch
 
 class MazeModel(Model):
     """
@@ -28,7 +29,7 @@ class MazeModel(Model):
         reset_game: Reinicia el juego en su configuración inicial.
     """
 
-    def __init__(self, width, height, map, search_strategy, beta: int = None):
+    def __init__(self, width, height, map, search_strategy, distance_metric="Manhattan",beta: int = None):
         """
         Inicializa el modelo de laberinto con la configuración proporcionada.
 
@@ -46,55 +47,57 @@ class MazeModel(Model):
         self.goal_position = None                   # Almacena la posición del objetivo.
         self.search_strategy = None                 # Estrategia de búsqueda seleccionada.
 
-        # Selección de la estrategia de búsqueda según el parámetro `search_strategy`.
+        # Asigna la estrategia de búsqueda según la elección del usuario
         if search_strategy == "DFS":
-            search_strategy = dfs()
+            self.search_strategy = dfs()
         elif search_strategy == "BFS":
-            search_strategy = bfs()
+            self.search_strategy = bfs()
         elif search_strategy == "UCS":
-            search_strategy = ucs()
+            self.search_strategy = ucs()
         elif search_strategy == "A*":
-            search_strategy = AStarSearch()
+            # Pasa `distance_metric` para la heurística de A*
+            self.search_strategy = AStarSearch(heuristic=distance_metric)
         elif search_strategy == "Beam Search":
-            search_strategy = BeamSearch(beta)
+            self.search_strategy = BeamSearch(beta, heuristic=distance_metric)
         elif search_strategy == "Hill Climbing":
-            search_strategy = HillClimbing()
+            self.search_strategy = HillClimbing(heuristic=distance_metric)
+        else:
+            raise ValueError(f"Estrategia de búsqueda desconocida: {search_strategy}")
 
-        # Configuración inicial de los agentes en la cuadrícula según el mapa proporcionado
+        # Configuración de la cuadrícula y agentes
         for y, row in enumerate(map):
             for x, cell in enumerate(row):
-                # Coloca agentes según el tipo de celda del mapa
-                if cell == "C":  # Camino
+                # Inicializa los agentes en la cuadrícula según el tipo de celda
+                if cell == "C":
                     road = AgentIdentity.create_agent("road", (x, y), self)
                     self.grid.place_agent(road, (x, y))
                     self.schedule.add(road)
-                elif cell == "M":  # Metal (obstáculo indestructible)
+                elif cell == "M":
                     metal = AgentIdentity.create_agent("metal", (x, y), self)
                     self.grid.place_agent(metal, (x, y))
                     self.schedule.add(metal)
-                elif cell == "R":  # Roca (obstáculo destructible)
+                elif cell == "R":
                     rock = AgentIdentity.create_agent("rock", (x, y), self)
                     self.grid.place_agent(rock, (x, y))
                     self.schedule.add(rock)
-                elif cell == "C_b":  # Camino con Bomberman
+                elif cell == "C_b":
                     road = AgentIdentity.create_agent("road", (x, y), self)
                     self.grid.place_agent(road, (x, y))
                     self.schedule.add(road)
-                    road.is_visited = True  # Marca el camino inicial de Bomberman como visitado
-                    bomberman = AgentIdentity.create_agent("bomberman", (x, y), self, search_strategy)
+                    road.is_visited = True
+                    bomberman = AgentIdentity.create_agent("bomberman", (x, y), self, self.search_strategy)
                     self.grid.place_agent(bomberman, (x, y))
                     self.schedule.add(bomberman)
-                elif cell == "R_s":  # Objetivo
+                elif cell == "R_s":
                     goal = AgentIdentity.create_agent("goal", (x, y), self)
                     self.grid.place_agent(goal, (x, y))
                     self.schedule.add(goal)
-                    self.goal_position = (x, y)  # Almacena la posición del objetivo
-                elif cell == "C_g":  # Camino con globo (enemigo)
+                    self.goal_position = (x, y)
+                elif cell == "C_g":
                     globe = AgentIdentity.create_agent("globe", (x, y), self)
                     self.grid.place_agent(globe, (x, y))
                     self.schedule.add(globe)
         
-        # Define el modelo como activo para la simulación
         self.running = True
 
     def step(self):
