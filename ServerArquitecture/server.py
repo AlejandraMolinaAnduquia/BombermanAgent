@@ -125,7 +125,7 @@ def create_server(map):
             value="Manhattan",
             choices=["Manhattan", "Euclidean"],
         ),
-        "beta": Slider("Beta", value=4, min_value=1, max_value=4),
+        "beta": Slider("Beta", value=2, min_value=1, max_value=2),
     }
 
     
