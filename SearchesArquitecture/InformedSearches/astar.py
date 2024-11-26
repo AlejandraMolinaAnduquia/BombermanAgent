@@ -99,3 +99,33 @@ class AStarSearch(SearchStrategy):
                 heapq.heappush(self.open_set, (f_score, tentative_g_score, self.index, next_pos, path + [next_pos]))
 
         return current
+        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
+        
+        for direction in directions:
+            new_x, new_y = current[0] + direction[0], current[1] + direction[1]
+            new_position = (new_x, new_y)
+
+            if (
+                0 <= new_x < agent.model.grid.width
+                and 0 <= new_y < agent.model.grid.height
+                and new_position not in self.visited
+            ):
+                agents_in_new_cell = agent.model.grid[new_x][new_y]
+                if all(isinstance(agent, (RoadAgent, GoalAgent, RockAgent, GlobeAgent)) for agent in agents_in_new_cell):
+                    tentative_g_score = self.g_score[current] + 10
+
+                    # Calcula la heurística según la selección del usuario
+                    if self.heuristic == 'Manhattan':
+                        h_score = self.manhattan_distance(new_position, self.goal)
+                    else:
+                        h_score = self.euclidean_distance(new_position, self.goal)
+                    
+                    f_score = tentative_g_score + h_score
+
+                    if new_position not in self.g_score or tentative_g_score < self.g_score[new_position]:
+                        self.g_score[new_position] = tentative_g_score
+                        heapq.heappush(self.open_set, (f_score, self.index, new_position, path + [new_position]))
+                        self.index += 1
+
+        return current
+    
