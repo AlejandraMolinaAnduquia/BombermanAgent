@@ -5,3 +5,4 @@ class RockAgent(Agent):
         super().__init__(unique_id, model)
         self.visit_order = None
         self.is_visited = False
+        
