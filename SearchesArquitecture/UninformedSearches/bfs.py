@@ -1,9 +1,9 @@
-from collections import deque
 from SearchesArquitecture.searchStrategy import SearchStrategy
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.road import RoadAgent
 from AgentArquitecture.rock import RockAgent
 from AgentArquitecture.globe import GlobeAgent
+from collections import deque
 
 class bfs(SearchStrategy):
     """
@@ -32,9 +32,11 @@ class bfs(SearchStrategy):
             start (tuple): Coordenadas del nodo inicial.
             goal (tuple): Coordenadas del nodo objetivo (opcional).
         
-        Almacena el nodo inicial junto con el camino vacío en la cola.
+        Almacena el nodo inicial junto con el camino vacío en la cola y lo marca como expandido.
         """
         self.queue.append((start, []))  # Añade el nodo inicial a la cola con un camino vacío
+        
+        
 
     def explore_step(self, agent, diagonal=False):
         """
@@ -54,10 +56,15 @@ class bfs(SearchStrategy):
         current, path = self.queue.popleft()
 
         # Verifica si el nodo actual es la meta
-        AgentArquitecture_in_cell = agent.model.grid[current[0]][current[1]]
-        if any(isinstance(a, GoalAgent) for a in AgentArquitecture_in_cell):
+        agents_in_cell = agent.model.grid[current[0]][current[1]]
+        if any(isinstance(a, GoalAgent) for a in agents_in_cell):
             agent.path_to_exit = path
             agent.has_explored = True
+
+            # Marcar la meta como expandida
+            agent.model.grid[current[0]][current[1]][0].visit_order = self.step_count
+            self.step_count += 1  # Incrementa el contador de pasos
+            print("Meta alcanzada y marcada como expandida.")
             return None
 
         # Expande el nodo si no ha sido visitado
@@ -74,6 +81,7 @@ class bfs(SearchStrategy):
                     (0, -1), (-1, -1), (-1, 0), (-1, 1)
                 ]
             else:
+                # Prioridad de direcciones: izquierda, arriba, derecha, abajo
                 directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 
             # Explora cada dirección para generar nuevos nodos
@@ -87,11 +95,10 @@ class bfs(SearchStrategy):
                     and 0 <= new_y < agent.model.grid.height
                     and new_position not in self.visited
                 ):
-                    AgentArquitecture_in_new_cell = agent.model.grid[new_x][new_y]
+                    agents_in_new_cell = agent.model.grid[new_x][new_y]
 
-                    # Añade el nodo si contiene únicamente agentes RoadAgent, GoalAgent, RockAgent, GlobeAgent
-                    if all(isinstance(a, (RoadAgent, GoalAgent, RockAgent, GlobeAgent)) for a in AgentArquitecture_in_new_cell):
-
+                    # Añade el nodo si contiene únicamente agentes válidos (camino, meta, roca, globo)
+                    if all(isinstance(a, (RoadAgent, GoalAgent, RockAgent, GlobeAgent)) for a in agents_in_new_cell):
                         self.queue.append((new_position, path + [new_position]))
 
         return current  # Devuelve el nodo expandido
