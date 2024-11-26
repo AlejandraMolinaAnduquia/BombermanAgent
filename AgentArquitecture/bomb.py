@@ -42,6 +42,7 @@ class BombAgent(Agent):
         from AgentArquitecture.metal import MetalAgent
         from AgentArquitecture.bomberman import BombermanAgent
         from AgentArquitecture.globe import GlobeAgent
+        from AgentArquitecture.goal import GoalAgent
         from AgentArquitecture.road import RoadAgent
 
         print(f"Explosión de bomba en: {self.position} con poder de destrucción: {self.destruction_power}")
@@ -71,23 +72,34 @@ class BombAgent(Agent):
                         # Guarda el número de orden de visita de la roca para transferirlo al PowerupAgent o RoadAgent
                         visit_order = getattr(agent, 'visit_order', None)
 
-                        # Elimina la roca de la cuadrícula y el modelo
-                        self.model.grid.remove_agent(agent)
-                        self.model.schedule.remove(agent)
+                        # Verificar si esta roca oculta la meta
+                        if getattr(agent, 'has_exit', False):  # Se asume que 'RockAgent' tiene esta propiedad
+                            # Elimina la roca y genera la meta
+                            self.model.grid.remove_agent(agent)
+                            self.model.schedule.remove(agent)
 
-                        if random() < 0.3:  # 30% de probabilidad de generar un Powerup en lugar de un camino
-                            # Crea un PowerupAgent en la posición de la roca destruida con el número de orden de visita
-                            powerup = PowerupAgent(self.model.next_id(), self.model, original_visit_order=visit_order)
-                            self.model.grid.place_agent(powerup, target_position)
-                            self.model.schedule.add(powerup)
-                            print(f"Comodín generado en la posición: {target_position} con orden de visita {visit_order}")
+                            exit_agent = GoalAgent(self.model.next_id(), self.model)
+                            self.model.grid.place_agent(exit_agent, target_position)
+                            self.model.schedule.add(exit_agent)
+                            print(f"Meta descubierta en la posición: {target_position}")
                         else:
-                            # Crea un camino (RoadAgent) en la posición de la roca destruida
-                            road = RoadAgent(self.model.next_id(), self.model)
-                            road.visit_order = visit_order  # Asigna el número de orden de visita
-                            self.model.grid.place_agent(road, target_position)
-                            self.model.schedule.add(road)
-                            print(f"Camino creado en la posición: {target_position} con número de orden {visit_order}")
+                            # Elimina la roca de la cuadrícula y el modelo
+                            self.model.grid.remove_agent(agent)
+                            self.model.schedule.remove(agent)
+
+                            if random() < 0.3:  # 30% de probabilidad de generar un Powerup en lugar de un camino
+                                # Crea un PowerupAgent en la posición de la roca destruida con el número de orden de visita
+                                powerup = PowerupAgent(self.model.next_id(), self.model, original_visit_order=visit_order)
+                                self.model.grid.place_agent(powerup, target_position)
+                                self.model.schedule.add(powerup)
+                                print(f"Comodín generado en la posición: {target_position} con orden de visita {visit_order}")
+                            else:
+                                # Crea un camino (RoadAgent) en la posición de la roca destruida
+                                road = RoadAgent(self.model.next_id(), self.model)
+                                road.visit_order = visit_order  # Asigna el número de orden de visita
+                                self.model.grid.place_agent(road, target_position)
+                                self.model.schedule.add(road)
+                                print(f"Camino creado en la posición: {target_position} con número de orden {visit_order}")
 
                         stop_explosion = True  # Detiene la explosión después de eliminar una roca
 
