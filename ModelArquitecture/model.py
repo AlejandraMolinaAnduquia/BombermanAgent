@@ -10,11 +10,15 @@ from AgentArquitecture.bomberman import BombermanAgent
 from AgentArquitecture.goal import GoalAgent
 from AgentArquitecture.globe import GlobeAgent
 from AgentArquitecture.road import RoadAgent
+from AgentArquitecture.bomb import BombAgent
+from AgentArquitecture.explosion import ExplosionAgent
+from AgentArquitecture.powerup import PowerupAgent
 from SearchesArquitecture.InformedSearches.astar import AStarSearch
 from SearchesArquitecture.InformedSearches.beamsearch import BeamSearch
 from SearchesArquitecture.InformedSearches.hillclimbing import HillClimbing
 from Utils.dinamicTools import load_map, get_map_path
 from SearchesArquitecture.InformedSearches.astar import AStarSearch
+from SearchesArquitecture.InformedSearches.alphabeta import AlphaBetaSearch
 
 class MazeModel(Model):
     """
@@ -29,7 +33,7 @@ class MazeModel(Model):
         reset_game: Reinicia el juego en su configuración inicial.
     """
 
-    def __init__(self, width, height, map, search_strategy, distance_metric="Manhattan",beta: int = None):
+    def __init__(self, width, height, map, search_strategy, distance_metric="Manhattan",beta: int = None, level: int = 0):
         """
         Inicializa el modelo de laberinto con la configuración proporcionada.
 
@@ -46,6 +50,8 @@ class MazeModel(Model):
         self.globe_active = True                    # Indica si los globos están activos.
         self.goal_position = None                   # Almacena la posición del objetivo.
         self.search_strategy = None                 # Estrategia de búsqueda seleccionada.
+        self.turn = "Bomberman"  # Inicializa el turno para Bomberman
+        self.level = level  # Nivel de dificultad de los globos
 
         # Asigna la estrategia de búsqueda según la elección del usuario
         if search_strategy == "DFS":
@@ -55,14 +61,16 @@ class MazeModel(Model):
         elif search_strategy == "UCS":
             self.search_strategy = ucs()
         elif search_strategy == "A*":
-            # Pasa `distance_metric` para la heurística de A*
             self.search_strategy = AStarSearch(heuristic=distance_metric)
         elif search_strategy == "Beam Search":
             self.search_strategy = BeamSearch(beta, heuristic=distance_metric)
         elif search_strategy == "Hill Climbing":
             self.search_strategy = HillClimbing(heuristic=distance_metric)
+        elif search_strategy == "Alpha-Beta":
+            self.search_strategy = AlphaBetaSearch(3)
         else:
             raise ValueError(f"Estrategia de búsqueda desconocida: {search_strategy}")
+
 
         # Configuración de la cuadrícula y agentes
         for y, row in enumerate(map):
@@ -105,8 +113,31 @@ class MazeModel(Model):
         Ejecuta un paso en la simulación, activando cada agente y luego
         verificando si Bomberman ha alcanzado el objetivo.
         """
-        self.schedule.step()  # Activa todos los agentes una vez por paso
+        if isinstance(self.search_strategy, AlphaBetaSearch):
+            if self.turn == "Bomberman":
+                # Activar solo Bomberman
+                for agent in self.schedule.agents:
+                    if isinstance(agent, BombermanAgent):
+                        agent.step()
+                    if isinstance(agent, BombAgent):
+                        agent.step()
+                    if isinstance(agent, ExplosionAgent):
+                        agent.step()
+                    if isinstance(agent, PowerupAgent):
+                        agent.step()
+                self.turn = "Globes"  # Cambiar el turno a los globos
+            elif self.turn == "Globes":
+                # Activar solo los globos
+                for agent in self.schedule.agents:
+                    if isinstance(agent, GlobeAgent):
+                        agent.step()
+                self.turn = "Bomberman"  # Cambiar el turno a Bomberman
+        else:
+            # Activar todos los agentes
+            self.schedule.step()
+
         self.check_bomberman_and_goal()  # Verifica si el objetivo ha sido alcanzado
+
 
     def check_bomberman_and_goal(self):
         """
