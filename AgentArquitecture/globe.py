@@ -1,4 +1,4 @@
-from AgentArquitecture.bomberman import BombermanAgent
+
 from AgentArquitecture.road import RoadAgent
 from mesa import Agent
 import random
@@ -19,6 +19,37 @@ class GlobeAgent(Agent):
         self.is_visited = False  # Indica si la casilla ha sido visitada
 
     def step(self):
+        """
+        Ejecuta un paso en simulación para el globo, usando diferentes estrategias según el nivel.
+        """
+        from Utils.state import GameState
+        from SearchesArquitecture.InformedSearches.alphabeta import AlphaBetaSearch
+        if self.pos is None:
+            return
+
+        bomberman = self.get_bomberman_agent()
+        if bomberman is None or bomberman.pos is None:
+            return
+
+        if isinstance(self.model.search_strategy, AlphaBetaSearch):
+            level = self.model.level  # Nivel de dificultad del globo
+            depth = 1 if level == 0 else (3 if level == 1 else 6)  # Fácil, Medio, Difícil
+
+            game_state = GameState(self.model, is_bomberman_turn=False)
+            best_action = self.model.search_strategy.run(
+                game_state=game_state,
+                depth=depth,
+                is_bomberman_turn=False
+            )
+
+            if isinstance(best_action, tuple):
+                self.model.grid.move_agent(self, best_action)
+            else:
+                print(f"Globo en {self.pos} no pudo encontrar un movimiento.")
+        else:
+            self.random_move()  # Nivel fácil usa movimiento aleatorio
+
+    def random_move(self):
         """
         Ejecuta un paso de simulación para el globo. Intenta moverse en una dirección aleatoria
         y maneja las colisiones con Bomberman.
@@ -69,6 +100,7 @@ class GlobeAgent(Agent):
             if not moved:
                 print("No se pudo mover el globo a ninguna nueva posición")
 
+
     def handle_collision(self, bomberman):
         """
         Maneja la colisión con Bomberman. Elimina a Bomberman y detiene la simulación.
@@ -89,6 +121,7 @@ class GlobeAgent(Agent):
         Returns:
             bomberman: El agente Bomberman si está en el scheduler; de lo contrario, None.
         """
+        from AgentArquitecture.bomberman import BombermanAgent
         for agent in self.model.schedule.agents:
             if isinstance(agent, BombermanAgent):
                 return agent

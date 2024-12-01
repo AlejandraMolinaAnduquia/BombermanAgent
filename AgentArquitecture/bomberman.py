@@ -1,4 +1,7 @@
 from mesa import Agent
+from Utils.state import GameState
+from SearchesArquitecture.InformedSearches.alphabeta import AlphaBetaSearch
+
 
 class BombermanAgent(Agent):
     def __init__(self, unique_id, model, search_strategy):
@@ -24,6 +27,11 @@ class BombermanAgent(Agent):
         self.original_path = []  # Almacena una copia del camino óptimo
         self.retreat_steps = 0  # Controla los pasos de retroceso en el camino óptimo
         self.direction = (0, 0)  # Dirección inicial de movimiento
+        self.alpha_beta = AlphaBetaSearch(max_depth=3)  # Configurar profundidad de búsqueda
+
+        if model is not None:
+            model.register_agent(self)  # Solo registra si hay modelo
+
 
         # Direcciones posibles de movimiento de Bomberman
         self.directions = {
@@ -201,20 +209,48 @@ class BombermanAgent(Agent):
         """
         if self.pos is None:
             return
-        
+
+        # Si no se ha inicializado la búsqueda, configurarla
         if not self.is_search_initialized:
             start_position = (self.pos[0], self.pos[1])
-            # Inicializa la búsqueda con el algoritmo especificado
-            self.search_strategy.start_search(start_position, self.model.goal_position)
-            self.is_search_initialized = True
-        
-        self.direction = self.calculate_direction() 
-        if not self.has_explored:
-            self.search_strategy.explore_step(self)
-            if self.has_explored:
-                print("Camino óptimo calculado:", self.path_to_exit)
-                self.original_path = self.path_to_exit[:]
-            return
 
+            if isinstance(self.search_strategy, AlphaBetaSearch):
+                # Ejecuta la búsqueda para alfa-beta
+                game_state = GameState(self.model, is_bomberman_turn=True)
+                best_action = self.search_strategy.run(
+                    game_state=game_state,
+                    depth=3,
+                    is_bomberman_turn=True
+                )
+
+                # Realizar la acción calculada por alfa-beta
+                if best_action == "place_bomb":
+                    self.place_bomb()
+                    return
+                elif best_action and isinstance(best_action, tuple):
+                    self.move_to_position(best_action)
+                    return
+            else:
+                # Para otras estrategias (BFS, DFS, etc.), inicializar la búsqueda
+                self.search_strategy.start_search(start_position, self.model.goal_position)
+                self.is_search_initialized = True
+
+        # Calcular dirección para avanzar
+        self.direction = self.calculate_direction()
+
+        # Explorar el laberinto según la estrategia (para BFS, DFS, A*, etc.)
+        if not isinstance(self.search_strategy, AlphaBetaSearch):  # Evita llamar a explore_step en alfa-beta
+            if not self.has_explored:
+                self.search_strategy.explore_step(self)
+                if self.has_explored:
+                    print("Camino óptimo calculado:", self.path_to_exit)
+                    self.original_path = self.path_to_exit[:]
+                return
+
+        # Moverse hacia la salida o ejecutar una estrategia defensiva
         self.move_to_exit_or_safety()
         print(f"Posición actual de Bomberman en este paso: {self.pos}")
+
+
+
+

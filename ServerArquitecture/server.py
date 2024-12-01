@@ -109,16 +109,17 @@ def create_server(map):
         "map": map,
         "search_strategy": Choice(
             "Recorridos",
-            value="A*",
-            choices=["BFS", "DFS", "UCS", "A*", "Beam Search", "Hill Climbing"], 
+            value="Alpha-Beta",
+            choices=["BFS", "DFS", "UCS", "A*", "Beam Search", "Hill Climbing", "Alpha-Beta"],  # Agrega "Alpha-Beta"
         ),
-        "distance_metric": Choice(  # Nuevo parámetro para seleccionar la distancia
+        "distance_metric": Choice(
             "Métrica de Distancia",
             value="Manhattan",
             choices=["Manhattan", "Euclidean"],
         ),
         "beta": Slider("Beta", value=2, min_value=1, max_value=2),
     }
+
 
     
     # Crea el servidor de la simulación con el modelo, grilla y parámetros
