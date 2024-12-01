@@ -17,15 +17,7 @@ from AgentArquitecture.explosion import ExplosionAgent
 from ModelArquitecture.model import MazeModel
 
 def agent_portrayal(agent):
-    """
-    Define cómo se representará visualmente cada tipo de agente en la simulación.
-
-    Args:
-        agent (Agent): El agente a representar.
-
-    Returns:
-        dict: Diccionario con las propiedades visuales del agente.
-    """
+    
     if agent is None:
         return
 

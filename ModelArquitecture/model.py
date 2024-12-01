@@ -33,17 +33,7 @@ class MazeModel(Model):
         reset_game: Reinicia el juego en su configuración inicial.
     """
 
-    def __init__(self, width, height, map, search_strategy, distance_metric="Manhattan",beta: int = None, level: int = 0):
-        """
-        Inicializa el modelo de laberinto con la configuración proporcionada.
-
-        Args:
-            width (int): Ancho de la cuadrícula.
-            height (int): Altura de la cuadrícula.
-            map (list): Mapa del laberinto con códigos para cada tipo de agente.
-            search_strategy (str): Estrategia de búsqueda elegida (p.ej., "DFS", "A*").
-            beta (int, opcional): Parámetro usado en la búsqueda de haz (Beam Search).
-        """
+    def __init__(self, width, height, map, search_strategy, distance_metric="Manhattan", beta: int = None, level: int = 0):
         super().__init__()
         self.grid = MultiGrid(width, height, True)  # Configura la cuadrícula del laberinto.
         self.schedule = RandomActivation(self)      # Inicializa el programador de activación aleatoria.
@@ -97,15 +87,21 @@ class MazeModel(Model):
                     self.grid.place_agent(bomberman, (x, y))
                     self.schedule.add(bomberman)
                 elif cell == "R_s":
+                    # Coloca un GoalAgent debajo de una roca
                     goal = AgentIdentity.create_agent("goal", (x, y), self)
                     self.grid.place_agent(goal, (x, y))
                     self.schedule.add(goal)
                     self.goal_position = (x, y)
+
+                    # # Coloca una roca encima de la meta
+                    # rock = AgentIdentity.create_agent("rock", (x, y), self)
+                    # self.grid.place_agent(rock, (x, y))
+                    # self.schedule.add(rock)
                 elif cell == "C_g":
                     globe = AgentIdentity.create_agent("globe", (x, y), self)
                     self.grid.place_agent(globe, (x, y))
                     self.schedule.add(globe)
-        
+
         self.running = True
 
     def step(self):
