@@ -22,8 +22,8 @@ class AlphaBetaSearch:
         return state.evaluate(is_bomberman_turn)
 
     def alpha_beta(self, state, depth, alpha, beta, maximizing_player):
-        # Detectar bucles explícitamente
-        if state.visited_positions.count(state.bomberman_position) > 3:
+        # Detectar bucles explícitos
+        if state.visited_positions.count(state.bomberman_position) > 2:
             return float('-inf') if maximizing_player else float('inf')
 
         if depth == 0 or state.is_terminal():
@@ -49,9 +49,7 @@ class AlphaBetaSearch:
             return min_eval
 
 
-
     def run(self, game_state, depth, is_bomberman_turn):
-        
         best_action = None
         best_value = float('-inf') if is_bomberman_turn else float('inf')
 
@@ -63,6 +61,10 @@ class AlphaBetaSearch:
                 beta=float('inf'),
                 maximizing_player=not is_bomberman_turn
             )
+            # Penalizar movimientos repetidos en la decisión final
+            if child.last_action in game_state.visited_positions:
+                value -= 50  # Penalización adicional
+
             print(f"Evaluando acción {child.last_action} con valor {value}")  # Depuración
             if is_bomberman_turn:
                 if value > best_value:
@@ -75,4 +77,5 @@ class AlphaBetaSearch:
 
         print(f"Mejor acción seleccionada: {best_action} con valor {best_value}")
         return best_action
+
 

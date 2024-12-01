@@ -130,33 +130,41 @@ class GameState:
     def get_children(self):
         children = []
         if self.is_bomberman_turn:
-            for move in self.generate_moves(self.bomberman_position):
+            # Generar movimientos válidos
+            moves = self.generate_moves(self.bomberman_position)
+            # Ordenar movimientos en función de su distancia a la salida
+            moves = sorted(moves, key=lambda pos: self.manhattan_distance(pos, self.goal_position))
+
+            for move in moves:
                 child_state = self.clone()
                 child_state.bomberman_position = move
                 child_state.last_action = move
-                child_state.visited_positions = self.visited_positions + [move]
+                child_state.visited_positions = self.visited_positions[-5:] + [move]
                 children.append(child_state)
 
-            # Solo permitir colocar una bomba si es útil
+            # Solo permitir colocar bombas si es útil
             if self.can_place_bomb() and self.is_bomb_useful():
                 bomb_state = self.clone()
                 bomb_state.add_bomb(self.bomberman_position)
                 bomb_state.last_action = "place_bomb"
-                bomb_state.visited_positions = self.visited_positions + [self.bomberman_position]
+                bomb_state.visited_positions = self.visited_positions[-5:] + [self.bomberman_position]
                 children.append(bomb_state)
         else:
             for globe in self.globes:
-                for move in self.generate_moves(globe["position"]):
+                moves = self.generate_moves(globe["position"])
+                # Ordenar movimientos en función de la distancia a Bomberman
+                moves = sorted(moves, key=lambda pos: self.manhattan_distance(pos, self.bomberman_position))
+
+                for move in moves:
                     child_state = self.clone()
                     for child_globe in child_state.globes:
                         if child_globe["agent"].unique_id == globe["agent"].unique_id:
                             child_globe["position"] = move
                             break
                     child_state.last_action = move
-                    child_state.visited_positions = self.visited_positions + [move]
+                    child_state.visited_positions = self.visited_positions[-5:] + [move]
                     children.append(child_state)
         return children
-
 
 
     def is_bomb_useful(self):
@@ -213,14 +221,14 @@ class GameState:
                 default=float('inf')
             )
             bomb_risk = self.bomb_risk(self.bomberman_position)
-            
-            # Penalización moderada por movimientos repetitivos
-            repetition_penalty = -10 if self.bomberman_position in self.visited_positions[-3:] else 0
-            
-            # Recompensa adicional por acercarse a la salida
-            goal_proximity_reward = -distance_to_goal * 2
 
-            return goal_proximity_reward + (5 / (distance_to_globes + 1)) - (100 if bomb_risk else 0) + repetition_penalty
+            # Penalización por bucles
+            repetition_penalty = -50 if self.bomberman_position in self.visited_positions[-3:] else 0
+
+            # Recompensa adicional por acercarse a la salida
+            goal_proximity_reward = -distance_to_goal * 5
+
+            return goal_proximity_reward + (10 / (distance_to_globes + 1)) - (100 if bomb_risk else 0) + repetition_penalty
         else:
             distance_to_bomberman = min(
                 [self.manhattan_distance(globe["position"], self.bomberman_position) for globe in self.globes],
@@ -228,9 +236,14 @@ class GameState:
             )
             bomberman_risk = self.bomb_risk(self.bomberman_position)
 
-            # Penalización moderada por movimientos repetitivos
-            repetition_penalty = -5 if any(globe["position"] in self.visited_positions[-3:] for globe in self.globes) else 0
+            # Penalización por movimientos repetitivos
+            repetition_penalty = -20 if any(globe["position"] in self.visited_positions[-3:] for globe in self.globes) else 0
 
-            return -distance_to_bomberman + (50 if bomberman_risk else 0) + repetition_penalty
+            # Recompensa por cercar a Bomberman
+            encirclement_reward = -distance_to_bomberman * 5
+
+            return encirclement_reward + (50 if bomberman_risk else 0) + repetition_penalty
+
+
 
 
