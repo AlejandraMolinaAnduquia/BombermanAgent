@@ -27,16 +27,20 @@ def get_map_path():
     Returns:
         str: La ruta del archivo seleccionado por el usuario, o None si se cancela.
     """
-    # Inicializa la ventana de `tkinter` en modo oculto.
-    root = tk.Tk()
-    root.withdraw()
-    
-    # Abre un cuadro de diálogo para seleccionar un archivo de texto
-    map_path = filedialog.askopenfilename(
-        title="Select the map file",
-        filetypes=[("Text Files", "*.txt")]
-    )
-    
-    # Cierra la ventana de `tkinter`
-    root.destroy()
-    return map_path
+    try:
+        # Inicializa la ventana de `tkinter` en modo oculto.
+        root = tk.Tk()
+        root.withdraw()
+
+        # Abre un cuadro de diálogo para seleccionar un archivo de texto
+        map_path = filedialog.askopenfilename(
+            title="Select the map file",
+            filetypes=[("Text Files", "*.txt")]
+        )
+
+        # Cierra la ventana de `tkinter`
+        root.destroy()
+        return map_path
+    except Exception as e:
+        print(f"Error al abrir el diálogo de selección de archivo: {e}")
+        return None

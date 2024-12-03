@@ -1,33 +1,38 @@
 class AlphaBetaSearch:
     def __init__(self, max_depth):
-        """
-        Inicializa la clase para la poda alfa-beta.
-
-        Args:
-            max_depth (int): La profundidad máxima para analizar el árbol de búsqueda.
-        """
         self.max_depth = max_depth
 
     def evaluate_state(self, state, is_bomberman_turn):
-        """
-        Evalúa un estado del juego.
+        if is_bomberman_turn:
+            # Penalización por riesgo de bomba
+            bomb_penalty = 500 if state.bomb_risk(state.bomberman_position) else 0
 
-        Args:
-            state (GameState): Estado actual del juego.
-            is_bomberman_turn (bool): True si es el turno de Bomberman, False si es el turno de los globos.
+            # Prioridad máxima hacia la meta
+            distance_to_goal = state.manhattan_distance(state.bomberman_position, state.goal_position)
+            goal_reward = -distance_to_goal * 100
 
-        Returns:
-            float: Valor heurístico del estado.
-        """
-        return state.evaluate(is_bomberman_turn)
+            # Penalización por proximidad a globos peligrosos
+            globe_penalty = -300 if any(
+                state.manhattan_distance(state.bomberman_position, globe["position"]) <= 2
+                for globe in state.globes
+            ) else 0
+
+            return goal_reward - bomb_penalty + globe_penalty
+        else:
+            # Globos intentan acercarse a Bomberman
+            if state.globes:
+                distance_to_bomberman = min(
+                    state.manhattan_distance(globe["position"], state.bomberman_position)
+                    for globe in state.globes
+                )
+                return -distance_to_bomberman * 100
+            return 0  # Sin globos, no penalizar
+
+
 
     def alpha_beta(self, state, depth, alpha, beta, maximizing_player):
-        # Detectar bucles explícitos
-        if state.visited_positions.count(state.bomberman_position) > 2:
-            return float('-inf') if maximizing_player else float('inf')
-
         if depth == 0 or state.is_terminal():
-            return state.evaluate(maximizing_player)
+            return self.evaluate_state(state, maximizing_player)
 
         if maximizing_player:
             max_eval = float('-inf')
@@ -48,11 +53,20 @@ class AlphaBetaSearch:
                     break
             return min_eval
 
-
     def run(self, game_state, depth, is_bomberman_turn):
         best_action = None
         best_value = float('-inf') if is_bomberman_turn else float('inf')
 
+        # Verificar riesgo actual
+        current_position = (
+            game_state.bomberman_position if is_bomberman_turn else game_state.globes[0]["position"]
+        )
+        if game_state.bomb_risk(current_position):
+            safe_position = game_state.find_safe_position(current_position)
+            if safe_position:
+                return safe_position
+
+        # Continuar con Alpha-Beta Search
         for child in game_state.get_children():
             value = self.alpha_beta(
                 state=child,
@@ -61,21 +75,8 @@ class AlphaBetaSearch:
                 beta=float('inf'),
                 maximizing_player=not is_bomberman_turn
             )
-            # Penalizar movimientos repetidos en la decisión final
-            if child.last_action in game_state.visited_positions:
-                value -= 50  # Penalización adicional
+            if (is_bomberman_turn and value > best_value) or (not is_bomberman_turn and value < best_value):
+                best_value = value
+                best_action = child.last_action
 
-            print(f"Evaluando acción {child.last_action} con valor {value}")  # Depuración
-            if is_bomberman_turn:
-                if value > best_value:
-                    best_value = value
-                    best_action = child.last_action
-            else:
-                if value < best_value:
-                    best_value = value
-                    best_action = child.last_action
-
-        print(f"Mejor acción seleccionada: {best_action} con valor {best_value}")
         return best_action
-
-

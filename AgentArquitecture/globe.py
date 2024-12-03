@@ -20,34 +20,47 @@ class GlobeAgent(Agent):
 
     def step(self):
         """
-        Ejecuta un paso en simulación para el globo, usando diferentes estrategias según el nivel.
+        Ejecuta un paso en la simulación para el Globo.
         """
         from Utils.state import GameState
         from SearchesArquitecture.InformedSearches.alphabeta import AlphaBetaSearch
         if self.pos is None:
             return
 
+        # Manejar riesgo de bomba
+        if self.model.state.bomb_risk(self.pos):
+            safe_position = self.model.state.find_safe_position(self.pos)
+            if safe_position:
+                self.model.grid.move_agent(self, safe_position)
+                return
+
+        # Estrategia de movimiento
         bomberman = self.get_bomberman_agent()
-        if bomberman is None or bomberman.pos is None:
-            return
-
-        if isinstance(self.model.search_strategy, AlphaBetaSearch):
-            level = self.model.level  # Nivel de dificultad del globo
-            depth = 1 if level == 0 else (3 if level == 1 else 6)  # Fácil, Medio, Difícil
-
+        if bomberman and isinstance(self.model.search_strategy, AlphaBetaSearch):
             game_state = GameState(self.model, is_bomberman_turn=False)
             best_action = self.model.search_strategy.run(
                 game_state=game_state,
-                depth=depth,
+                depth=3,
                 is_bomberman_turn=False
             )
-
             if isinstance(best_action, tuple):
                 self.model.grid.move_agent(self, best_action)
             else:
                 print(f"Globo en {self.pos} no pudo encontrar un movimiento.")
+
         else:
-            self.random_move()  # Nivel fácil usa movimiento aleatorio
+            self.random_move()
+
+
+    def generate_moves(self, pos):
+        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Prioridad de movimiento
+        valid_moves = []
+        for dx, dy in directions:
+            new_pos = (pos[0] + dx, pos[1] + dy)
+            if self.is_valid_move(new_pos):
+                valid_moves.append(new_pos)
+        return valid_moves
+
 
     def random_move(self):
         """
@@ -70,7 +83,7 @@ class GlobeAgent(Agent):
 
         if bomberman.is_moving:
             # Define las direcciones posibles y las mezcla para elegir una aleatoria
-            possible_directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+            possible_directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Prioridad de movimiento
             random.shuffle(possible_directions)
 
             moved = False  # Controla si el globo logra moverse

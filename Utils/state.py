@@ -3,6 +3,7 @@ from AgentArquitecture.bomb import BombAgent
 from AgentArquitecture.road import RoadAgent
 from AgentArquitecture.metal import MetalAgent
 from AgentArquitecture.rock import RockAgent
+from AgentArquitecture.goal import GoalAgent
 from mesa.space import MultiGrid
 
 
@@ -30,6 +31,12 @@ class GameState:
         self.goal_position = model.goal_position
         self.is_bomberman_turn = is_bomberman_turn
         self.visited_positions = []  # Historial de posiciones recientes para evitar bucles
+        self.explored_paths_bomberman = self.explore_entire_map()
+
+        self.explored_paths_globes = {
+            globe["agent"]: self.explore_entire_map()
+            for globe in self.globes
+        }
 
     def _find_bomberman(self):
         """Encuentra la posición de Bomberman en la grilla."""
@@ -59,13 +66,7 @@ class GameState:
 
     def bomb_risk(self, pos):
         """
-        Evalúa si una posición está en peligro debido a una bomba cercana.
-
-        Args:
-            pos (tuple): Coordenadas de la posición a evaluar.
-
-        Returns:
-            bool: True si la posición está en peligro, False en caso contrario.
+        Evalúa si una posición está en peligro debido a bombas activas.
         """
         for bomb in self.bombs:
             bomb_pos = bomb["position"]
@@ -77,15 +78,32 @@ class GameState:
                         return True
         return False
 
+
+
     def is_valid_move(self, pos):
         """
-        Verifica si una posición es válida para moverse (no contiene obstáculos).
-        """
+        Determina si un movimiento a una posición específica es válido, verificando
+        los límites del mapa y la presencia de agentes permitidos en esa celda.
         
-        if not (0 <= pos[0] < self.width and 0 <= pos[1] < self.height):
+        Args:
+            pos (tuple): Coordenadas de la posición a verificar.
+        
+        Returns:
+            bool: `True` si el movimiento es válido, `False` en caso contrario.
+        """
+        x, y = pos
+        # Verifica si la posición está dentro de los límites de la cuadrícula
+        if not (0 <= x < self.width and 0 <= y < self.height):
             return False
-        cell_contents = self.grid.get_cell_list_contents([pos])
-        return all(not isinstance(agent, (BombAgent, GlobeAgent, MetalAgent, RockAgent)) for agent in cell_contents)
+
+        # Obtiene los agentes en la celda
+        agents_in_cell = self.grid.get_cell_list_contents([pos])
+
+        # Permitir moverse a celdas que solo contienen caminos, meta o rocas
+        return all(
+            isinstance(agent, (RoadAgent, GoalAgent, RockAgent)) for agent in agents_in_cell
+        )
+
 
 
     def evaluate_position(self, pos, agent_type):
@@ -115,9 +133,18 @@ class GameState:
         return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
     def generate_moves(self, pos):
-        """Genera las posiciones válidas desde una posición dada."""
-        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
-        return [new_pos for dx, dy in directions if self.is_valid_move((new_pos := (pos[0] + dx, pos[1] + dy)))]
+        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Direcciones
+        valid_moves = []
+        visited_set = set(self.visited_positions[-3:])  # Últimas 3 posiciones
+
+        for dx, dy in directions:
+            new_pos = (pos[0] + dx, pos[1] + dy)
+            if self.is_valid_move(new_pos) and new_pos not in visited_set:
+                valid_moves.append(new_pos)
+        return valid_moves
+
+
+
 
     def clone(self):
         """Crea una copia del estado actual."""
@@ -129,72 +156,75 @@ class GameState:
 
     def get_children(self):
         children = []
-        if self.is_bomberman_turn:
-            # Generar movimientos válidos
-            moves = self.generate_moves(self.bomberman_position)
-            # Ordenar movimientos en función de su distancia a la salida
-            moves = sorted(moves, key=lambda pos: self.manhattan_distance(pos, self.goal_position))
 
+        if self.is_bomberman_turn:
+            # Generar movimientos para Bomberman
+            moves = self.generate_moves(self.bomberman_position)
             for move in moves:
                 child_state = self.clone()
                 child_state.bomberman_position = move
                 child_state.last_action = move
-                child_state.visited_positions = self.visited_positions[-5:] + [move]
                 children.append(child_state)
 
-            # Solo permitir colocar bombas si es útil
+            # Generar acción de colocar bomba
             if self.can_place_bomb() and self.is_bomb_useful():
                 bomb_state = self.clone()
                 bomb_state.add_bomb(self.bomberman_position)
                 bomb_state.last_action = "place_bomb"
-                bomb_state.visited_positions = self.visited_positions[-5:] + [self.bomberman_position]
                 children.append(bomb_state)
         else:
+            # Movimientos para los globos
             for globe in self.globes:
-                moves = self.generate_moves(globe["position"])
-                # Ordenar movimientos en función de la distancia a Bomberman
-                moves = sorted(moves, key=lambda pos: self.manhattan_distance(pos, self.bomberman_position))
-
+                moves = self.generate_moves(globe["position"])  # Aseguramos movimientos válidos
                 for move in moves:
                     child_state = self.clone()
                     for child_globe in child_state.globes:
-                        if child_globe["agent"].unique_id == globe["agent"].unique_id:
+                        if child_globe["agent"] == globe["agent"]:
                             child_globe["position"] = move
                             break
                     child_state.last_action = move
-                    child_state.visited_positions = self.visited_positions[-5:] + [move]
                     children.append(child_state)
+
         return children
+
 
 
     def is_bomb_useful(self):
         """
-        Determina si colocar una bomba es útil para Bomberman.
-        Retorna True si hay globos o obstáculos estratégicos cerca.
+        Determina si colocar una bomba es útil.
         """
-        for globe in self.globes:
-            distance = self.manhattan_distance(self.bomberman_position, globe["position"])
-            if distance <= 2:  # Rango de destrucción de la bomba
+        x, y = self.bomberman_position
+        neighbors = [
+            (x + dx, y + dy)
+            for dx, dy in [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Prioridad de movimiento]
+            if 0 <= x + dx < self.width and 0 <= y + dy < self.height
+        ]
+        for neighbor in neighbors:
+            agents_in_cell = self.grid.get_cell_list_contents([neighbor])
+            if any(isinstance(agent, (GlobeAgent, RockAgent)) for agent in agents_in_cell):
                 return True
         return False
 
+
     def can_place_bomb(self):
         """
-        Verifica si Bomberman puede colocar una bomba en su posición actual.
-
-        Returns:
-            bool: True si puede colocar una bomba, False en caso contrario.
+        Verifica si Bomberman puede colocar una bomba.
+        Returns True si no hay bombas activas, False en caso contrario.
         """
-        if self.bomberman_position in [bomb["position"] for bomb in self.bombs]:
-            return False
-        return True
+        return not any(
+            bomb["position"] == self.bomberman_position for bomb in self.bombs
+        )
+
+
 
     def add_bomb(self, position):
-        """Agrega una bomba al estado actual y la registra correctamente en el modelo."""
-        bomb = BombAgent(self.model.next_id(), self.model, position, destruction_power=2)
+        """Agrega una bomba con el poder de destrucción inicial de Bomberman."""
+        destruction_power = 1  # Cambiar a 1 como valor inicial
+        bomb = BombAgent(self.model.next_id(), self.model, position, destruction_power=destruction_power)
         self.model.grid.place_agent(bomb, position)
         self.model.schedule.add(bomb)
         self.bombs.append({"agent": bomb, "position": position})
+
 
     def is_terminal(self):
         """
@@ -212,38 +242,141 @@ class GameState:
         if any(globe["position"] == self.bomberman_position for globe in self.globes):
             return True
         return False
+    
+    def find_safe_position(self, current_pos):
+        """
+        Encuentra una posición segura adyacente a la posición actual,
+        evitando el alcance de explosiones.
+        """
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Movimientos ortogonales
+        safe_positions = [
+            (current_pos[0] + dx, current_pos[1] + dy)
+            for dx, dy in directions
+            if self.is_valid_move((current_pos[0] + dx, current_pos[1] + dy))
+            and not self.bomb_risk((current_pos[0] + dx, current_pos[1] + dy))
+        ]
+        return safe_positions[0] if safe_positions else None
+
+
 
     def evaluate(self, is_bomberman_turn):
         if is_bomberman_turn:
-            distance_to_goal = self.manhattan_distance(self.bomberman_position, self.goal_position)
-            distance_to_globes = min(
-                [self.manhattan_distance(self.bomberman_position, globe["position"]) for globe in self.globes],
-                default=float('inf')
-            )
-            bomb_risk = self.bomb_risk(self.bomberman_position)
+            # Penalizar por estar en riesgo de bombas
+            bomb_penalty = -500 if self.bomb_risk(self.bomberman_position) else 0
+            
+            # Priorizar la meta
+            goal_reward = -self.manhattan_distance(self.bomberman_position, self.goal_position) * 100
 
-            # Penalización por bucles
-            repetition_penalty = -50 if self.bomberman_position in self.visited_positions[-3:] else 0
+            # Penalizar la proximidad de globos peligrosos
+            globe_penalty = -300 if any(
+                self.manhattan_distance(self.bomberman_position, globe["position"]) <= 2 for globe in self.globes
+            ) else 0
 
-            # Recompensa adicional por acercarse a la salida
-            goal_proximity_reward = -distance_to_goal * 5
-
-            return goal_proximity_reward + (10 / (distance_to_globes + 1)) - (100 if bomb_risk else 0) + repetition_penalty
+            return goal_reward + bomb_penalty + globe_penalty
         else:
-            distance_to_bomberman = min(
-                [self.manhattan_distance(globe["position"], self.bomberman_position) for globe in self.globes],
-                default=float('inf')
-            )
-            bomberman_risk = self.bomb_risk(self.bomberman_position)
+            # Globos intentan acercarse a Bomberman
+            bomberman_penalty = -self.manhattan_distance(self.globes[0]["position"], self.bomberman_position) * 50
 
-            # Penalización por movimientos repetitivos
-            repetition_penalty = -20 if any(globe["position"] in self.visited_positions[-3:] for globe in self.globes) else 0
+            # Evitar bombas
+            bomb_penalty = -500 if self.bomb_risk(self.globes[0]["position"]) else 0
 
-            # Recompensa por cercar a Bomberman
-            encirclement_reward = -distance_to_bomberman * 5
-
-            return encirclement_reward + (50 if bomberman_risk else 0) + repetition_penalty
+            return bomberman_penalty + bomb_penalty
 
 
+    def rocks_in_path_to_goal(self):
+        """
+        Identifica las rocas en el camino hacia la meta usando un recorrido válido.
+        """
+        path_to_goal = self.find_path_to_goal(self.bomberman_position, self.goal_position)
+        return [
+            pos for pos in path_to_goal
+            if any(isinstance(agent, RockAgent) for agent in self.grid.get_cell_list_contents([pos]))
+        ]
+
+
+    def find_path_to_goal(self, start_pos, goal_pos):
+        """
+        Encuentra un camino desde la posición de inicio hasta la meta usando BFS.
+        Considera rocas como posiciones válidas si Bomberman puede destruirlas.
+        """
+        from queue import Queue
+
+        visited = set()
+        queue = Queue()
+        queue.put((start_pos, []))  # (posición actual, camino hasta ahora)
+
+        while not queue.empty():
+            current_pos, path = queue.get()
+            if current_pos in visited:
+                continue
+
+            visited.add(current_pos)
+            if current_pos == goal_pos:
+                return path + [goal_pos]
+
+            # Generar movimientos válidos
+            for move in self.generate_moves(current_pos):
+                if move not in visited:
+                    queue.put((move, path + [move]))
+
+        # Si no hay camino, retorna lista vacía
+        return []
+
+
+    def explore_entire_map(self):
+        """
+        Explora el mapa completo y retorna todos los caminos posibles desde la posición inicial
+        de cada agente relevante (Bomberman o Globos).
+        
+        Returns:
+            dict: Un diccionario con los caminos explorados para Bomberman y los Globos.
+        """
+        from queue import Queue
+
+        explored_paths = {"bomberman": {}, "globes": []}
+
+        # Explorar el mapa para Bomberman
+        start_pos = self.bomberman_position
+        if start_pos:
+            visited = set()
+            queue = Queue()
+            queue.put((start_pos, []))  # (posición actual, camino acumulado)
+
+            while not queue.empty():
+                current_pos, path = queue.get()
+                if current_pos in visited:
+                    continue
+
+                visited.add(current_pos)
+                explored_paths["bomberman"][current_pos] = path
+
+                for move in self.generate_moves(current_pos):
+                    if move not in visited:
+                        queue.put((move, path + [move]))
+
+        # Explorar el mapa para cada Globo
+        for globe in self.globes:
+            globe_start_pos = globe["position"]
+            if globe_start_pos:
+                visited = set()
+                queue = Queue()
+                queue.put((globe_start_pos, []))  # (posición actual, camino acumulado)
+
+                globe_paths = {}
+                while not queue.empty():
+                    current_pos, path = queue.get()
+                    if current_pos in visited:
+                        continue
+
+                    visited.add(current_pos)
+                    globe_paths[current_pos] = path
+
+                    for move in self.generate_moves(current_pos):
+                        if move not in visited:
+                            queue.put((move, path + [move]))
+
+                explored_paths["globes"].append(globe_paths)
+
+        return explored_paths
 
 

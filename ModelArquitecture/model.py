@@ -19,6 +19,7 @@ from SearchesArquitecture.InformedSearches.hillclimbing import HillClimbing
 from Utils.dinamicTools import load_map, get_map_path
 from SearchesArquitecture.InformedSearches.astar import AStarSearch
 from SearchesArquitecture.InformedSearches.alphabeta import AlphaBetaSearch
+from Utils.state import GameState  # Asegúrate de importar GameState
 
 class MazeModel(Model):
     """
@@ -32,16 +33,16 @@ class MazeModel(Model):
         is_cell_empty: Comprueba si una celda contiene solo caminos o el objetivo.
         reset_game: Reinicia el juego en su configuración inicial.
     """
-
-    def __init__(self, width, height, map, search_strategy, distance_metric="Manhattan", beta: int = None, level: int = 0):
+    
+    def __init__(self, width, height, map, search_strategy, distance_metric="Manhattan", beta: int = None, level: int = 2):
         super().__init__()
         self.grid = MultiGrid(width, height, True)  # Configura la cuadrícula del laberinto.
         self.schedule = RandomActivation(self)      # Inicializa el programador de activación aleatoria.
         self.globe_active = True                    # Indica si los globos están activos.
         self.goal_position = None                   # Almacena la posición del objetivo.
         self.search_strategy = None                 # Estrategia de búsqueda seleccionada.
-        self.turn = "Bomberman"  # Inicializa el turno para Bomberman
-        self.level = level  # Nivel de dificultad de los globos
+        self.turn = "Bomberman"                     # Inicializa el turno para Bomberman
+        self.level = level                          # Nivel de dificultad de los globos
 
         # Asigna la estrategia de búsqueda según la elección del usuario
         if search_strategy == "DFS":
@@ -58,14 +59,14 @@ class MazeModel(Model):
             self.search_strategy = HillClimbing(heuristic=distance_metric)
         elif search_strategy == "Alpha-Beta":
             self.search_strategy = AlphaBetaSearch(3)
+        elif search_strategy in ["Alpha-Beta", "A*"]:  # Solo los algoritmos que requieren un estado del juego
+            self.state = GameState(self)  # Inicializa el estado del juego
         else:
             raise ValueError(f"Estrategia de búsqueda desconocida: {search_strategy}")
-
 
         # Configuración de la cuadrícula y agentes
         for y, row in enumerate(map):
             for x, cell in enumerate(row):
-                # Inicializa los agentes en la cuadrícula según el tipo de celda
                 if cell == "C":
                     road = AgentIdentity.create_agent("road", (x, y), self)
                     self.grid.place_agent(road, (x, y))
@@ -87,22 +88,20 @@ class MazeModel(Model):
                     self.grid.place_agent(bomberman, (x, y))
                     self.schedule.add(bomberman)
                 elif cell == "R_s":
-                    # Coloca un GoalAgent debajo de una roca
                     goal = AgentIdentity.create_agent("goal", (x, y), self)
                     self.grid.place_agent(goal, (x, y))
                     self.schedule.add(goal)
                     self.goal_position = (x, y)
-
-                    # # Coloca una roca encima de la meta
-                    # rock = AgentIdentity.create_agent("rock", (x, y), self)
-                    # self.grid.place_agent(rock, (x, y))
-                    # self.schedule.add(rock)
                 elif cell == "C_g":
                     globe = AgentIdentity.create_agent("globe", (x, y), self)
                     self.grid.place_agent(globe, (x, y))
                     self.schedule.add(globe)
 
+        # Inicializa el estado del juego después de configurar la cuadrícula y los agentes
+        self.state = GameState(self)
+
         self.running = True
+
 
     def step(self):
         """
