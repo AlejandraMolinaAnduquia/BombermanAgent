@@ -33,10 +33,10 @@ class BombermanAgent(Agent):
             model.register_agent(self)  # Solo registra si hay modelo
 
 
-        # Direcciones posibles de movimiento de Bomberman
+        # Direcciones posibles de movimiento de directions = [(-1, 0), (0, 1), (1, 0), (0, -1)] Bomberman Prioridad: Izquierda, Arriba, Derecha, Abajo
         self.directions = {
-            'UP': (0, -1),
-            'DOWN': (0, 1),
+            'UP': (0, 1),
+            'DOWN': (0, -1),
             'LEFT': (-1, 0),
             'RIGHT': (1, 0),
         }

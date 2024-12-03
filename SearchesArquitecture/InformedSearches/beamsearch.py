@@ -125,7 +125,7 @@ class BeamSearch(SearchStrategy):
             list: Lista de vecinos válidos.
         """
         neighbors = []
-        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Prioridad de movimiento
+        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Prioridad de movimiento Prioridad: Izquierda, Arriba, Derecha, Abajo
         for direction in directions:
             new_x, new_y = current[0] + direction[0], current[1] + direction[1]
             new_position = (new_x, new_y)
