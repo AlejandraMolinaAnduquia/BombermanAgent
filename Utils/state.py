@@ -297,6 +297,9 @@ class GameState:
 
 
     def is_terminal(self):
+        """
+        Determina si el estado actual es terminal.
+        """
         # Actualizar posiciones antes de evaluar
         self.update_positions()
 
@@ -307,26 +310,12 @@ class GameState:
             return True  # Estado terminal
 
         # Verificar si algún globo puede atacar a Bomberman
-        for globe in self.globes:
-            if self.manhattan_distance(globe["position"], self.bomberman_position) == 1:
-                # Eliminar a Bomberman y obtener su última posición
-                last_bomberman_position = self.remove_bomberman_and_update_model()
-
-                if last_bomberman_position is not None:
-                    # Ajustar la posición según el mapa invertido
-                    adjusted_position = last_bomberman_position
-                    print(f"[Actualización] Globo movido de {globe['position']} a {adjusted_position} tras eliminar a Bomberman")
-                    
-                    # Actualizar la posición del globo
-                    globe["position"] = adjusted_position
-                    self.grid.move_agent(globe["agent"], adjusted_position)
-                    
-                    # Sincronizar el modelo y la interfaz
-                    self.update_positions()
-                    self.sync_with_interface()
-                else:
-                    print("[Error] No se pudo obtener la última posición de Bomberman")
-                return True
+        if not self.is_bomberman_turn:  # Solo evaluar ataque de globos en su turno
+            for globe in self.globes:
+                if self.manhattan_distance(globe["position"], self.bomberman_position) == 1:
+                    print(f"[Actualización] Globo {globe['agent'].unique_id} elimina a Bomberman.")
+                    self.remove_bomberman_and_update_model()
+                    return True
 
         # Verificar si Bomberman llegó a la meta
         if self.bomberman_position == self.goal_position:

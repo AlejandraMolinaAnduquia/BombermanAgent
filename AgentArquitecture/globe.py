@@ -58,7 +58,24 @@ class GlobeAgent(Agent):
             print(f"[Globo {self.unique_id}] No encontró un camino hacia Bomberman. Moviéndose aleatoriamente.")
             self.random_move()
 
+    def should_wait_or_alternate(self, next_pos):
+        """
+        Verifica si el globo debe esperar o buscar un camino alternativo debido a otros globos.
 
+        Args:
+            next_pos (tuple): La posición a la que el globo quiere moverse.
+
+        Returns:
+            bool: True si debe esperar, False si puede proceder.
+        """
+        # Obtener las posiciones de los otros globos
+        other_globe_positions = {globe["position"] for globe in self.model.state.globes if globe["agent"] != self}
+
+        # Verificar si la posición siguiente está ocupada por otro globo
+        if next_pos in other_globe_positions:
+            print(f"[Globo {self.unique_id}] Esperando o alternando camino debido a bloqueo en {next_pos}.")
+            return True
+        return False
 
     def calculate_path_to_bomberman(self):
         """
@@ -99,26 +116,6 @@ class GlobeAgent(Agent):
                 queue.put((move, path + [move]))
 
         return []  # Si no se encuentra un camino, retorna lista vacía
-
-
-    def should_wait_or_alternate(self, next_pos):
-        """
-        Verifica si el globo debe esperar o buscar un camino alternativo debido a otros globos.
-
-        Args:
-            next_pos (tuple): La posición a la que el globo quiere moverse.
-
-        Returns:
-            bool: True si debe esperar, False si puede proceder.
-        """
-        # Obtener las posiciones de los otros globos
-        other_globe_positions = {globe["position"] for globe in self.model.state.globes if globe["agent"] != self}
-
-        # Verificar si la posición siguiente está ocupada por otro globo
-        if next_pos in other_globe_positions:
-            print(f"[Globo {self.unique_id}] Esperando o alternando camino debido a bloqueo en {next_pos}.")
-            return True
-        return False
 
 
     def generate_moves(self, pos):
