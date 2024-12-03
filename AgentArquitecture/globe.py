@@ -1,5 +1,6 @@
 
 from AgentArquitecture.road import RoadAgent
+from SearchesArquitecture.InformedSearches.alphabeta import AlphaBetaSearch
 from mesa import Agent
 import random
 
@@ -25,31 +26,34 @@ class GlobeAgent(Agent):
         if self.pos is None:
             print(f"[Error] Globo {self.unique_id} no tiene posición.")
             return
+        if isinstance(self.model.search_strategy, AlphaBetaSearch):
+            # Manejar riesgo de bomba
+            if self.model.state.bomb_risk(self.pos):
+                safe_position = self.model.state.find_safe_position(self.pos)
+                if safe_position:
+                    print(f"[Globo {self.unique_id}] En peligro de bomba. Moviéndose a posición segura: {safe_position}")
+                    self.model.grid.move_agent(self, safe_position)
+                    return
 
-        # Manejar riesgo de bomba
-        if self.model.state.bomb_risk(self.pos):
-            safe_position = self.model.state.find_safe_position(self.pos)
-            if safe_position:
-                print(f"[Globo {self.unique_id}] En peligro de bomba. Moviéndose a posición segura: {safe_position}")
-                self.model.grid.move_agent(self, safe_position)
-                return
+            # Calcular el camino hacia Bomberman
+            path_to_bomberman = self.calculate_path_to_bomberman()
 
-        # Calcular el camino hacia Bomberman
-        path_to_bomberman = self.calculate_path_to_bomberman()
+            if path_to_bomberman:
+                # Moverse al siguiente paso en el camino calculado
+                next_step = path_to_bomberman[0]
+                if self.should_wait_or_alternate(next_step):
+                    # Esperar o buscar un camino alternativo
+                    self.random_move()  # Intentar un movimiento aleatorio temporal
+                else:
+                    print(f"[Globo {self.unique_id}] Moviéndose hacia Bomberman: {next_step}")
+                    self.model.grid.move_agent(self, next_step)
 
-        if path_to_bomberman:
-            # Moverse al siguiente paso en el camino calculado
-            next_step = path_to_bomberman[0]
-            if self.should_wait_or_alternate(next_step):
-                # Esperar o buscar un camino alternativo
-                self.random_move()  # Intentar un movimiento aleatorio temporal
+                    # Si alcanza a Bomberman, manejar colisión
+                    if self.check_collision(self.get_bomberman_agent().pos):
+                        self.handle_collision(self.get_bomberman_agent())
             else:
-                print(f"[Globo {self.unique_id}] Moviéndose hacia Bomberman: {next_step}")
-                self.model.grid.move_agent(self, next_step)
-
-                # Si alcanza a Bomberman, manejar colisión
-                if self.check_collision(self.get_bomberman_agent().pos):
-                    self.handle_collision(self.get_bomberman_agent())
+                print(f"[Globo {self.unique_id}] No encontró un camino hacia Bomberman. Moviéndose aleatoriamente.")
+                self.random_move()
         else:
             print(f"[Globo {self.unique_id}] No encontró un camino hacia Bomberman. Moviéndose aleatoriamente.")
             self.random_move()
