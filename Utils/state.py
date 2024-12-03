@@ -134,14 +134,19 @@ class GameState:
         if pos is None:
             return []  # Si la posición es None, no hay movimientos válidos
         
-        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Solo movimientos ortogonales
+        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Movimientos ortogonales
         valid_moves = []
 
         for dx, dy in directions:
             new_pos = (pos[0] + dx, pos[1] + dy)
             if self.is_valid_move(new_pos):
-                valid_moves.append(new_pos)
+                # Verifica que la posición no esté ocupada por otro globo
+                agents_in_cell = self.grid.get_cell_list_contents([new_pos])
+                if not any(isinstance(agent, GlobeAgent) for agent in agents_in_cell):
+                    valid_moves.append(new_pos)
         return valid_moves
+
+
 
 
     def find_optimized_path_to_goal(self):
@@ -221,6 +226,7 @@ class GameState:
         clone_state.bombs = [{"agent": bomb["agent"], "position": bomb["position"]} for bomb in self.bombs]
         return clone_state
 
+
     def get_children(self):
         children = []
 
@@ -240,44 +246,63 @@ class GameState:
                 bomb_state.last_action = "place_bomb"
                 children.append(bomb_state)
         else:
-            # Movimientos para los globos
+            # Movimientos para cada globo (independiente)
             for globe in self.globes:
-                path_to_bomberman = self.find_path_to_bomberman(globe["position"])
+                globe_agent = globe["agent"]
+                globe_pos = globe["position"]
+
+                # Historial para evitar bucles
+                history = globe_agent.history if hasattr(globe_agent, 'history') else []
+                if not hasattr(globe_agent, 'history'):
+                    globe_agent.history = history
+
+                # Calcular camino hacia Bomberman
+                path_to_bomberman = self.find_path_to_bomberman(globe_pos)
+                print(f"[Debug] Globo {globe_agent.unique_id} en posición {globe_pos} calcula camino hacia Bomberman: {path_to_bomberman}")
+
+                # Movimiento hacia Bomberman
                 if path_to_bomberman:
-                    # Usar el siguiente paso del camino calculado
                     next_move = path_to_bomberman[0]
-                    child_state = self.clone()
-                    for child_globe in child_state.globes:
-                        if child_globe["agent"] == globe["agent"]:
-                            child_globe["position"] = next_move
-                            break
-                    child_state.last_action = next_move
-                    children.append(child_state)
-                else:
-                    # Generar movimientos válidos normales si no hay camino directo
-                    valid_moves = self.generate_moves(globe["position"])
-                    for move in valid_moves:
+                    if next_move not in history:  # Evitar movimientos repetidos recientes
                         child_state = self.clone()
                         for child_globe in child_state.globes:
-                            if child_globe["agent"] == globe["agent"]:
+                            if child_globe["agent"] == globe_agent:
+                                child_globe["position"] = next_move
+                                child_globe["history"] = history[-2:] + [next_move]  # Mantener solo últimos 2 movimientos
+                                break
+                        child_state.last_action = next_move
+                        children.append(child_state)
+                else:
+                    # Movimientos válidos exploratorios
+                    valid_moves = self.generate_moves(globe_pos)
+                    print(f"[Debug] Globo {globe_agent.unique_id} en posición {globe_pos} genera movimientos válidos: {valid_moves}")
+                    for move in valid_moves:
+                        # Evitar colisiones con otros globos y movimientos recientes
+                        occupied_positions = {g["position"] for g in self.globes if g["agent"] != globe_agent}
+                        if move in occupied_positions or move in history:
+                            continue
+                        
+                        child_state = self.clone()
+                        for child_globe in child_state.globes:
+                            if child_globe["agent"] == globe_agent:
                                 child_globe["position"] = move
+                                child_globe["history"] = history[-2:] + [move]
                                 break
                         child_state.last_action = move
                         children.append(child_state)
 
-                # Ataque si el globo está a un paso de Bomberman
-                if self.manhattan_distance(globe["position"], self.bomberman_position) == 1:
+                # Generar ataque si Bomberman está adyacente
+                if self.manhattan_distance(globe_pos, self.bomberman_position) == 1:
                     attack_state = self.clone()
                     attack_state.bomberman_position = None  # Bomberman eliminado
                     for child_globe in attack_state.globes:
-                        if child_globe["agent"] == globe["agent"]:
+                        if child_globe["agent"] == globe_agent:
                             child_globe["position"] = self.bomberman_position
                             break
                     attack_state.last_action = "attack"
                     children.append(attack_state)
 
         return children
-
 
     def is_terminal(self):
         # Actualizar posiciones antes de evaluar

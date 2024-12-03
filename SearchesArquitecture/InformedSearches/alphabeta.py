@@ -10,7 +10,7 @@ class AlphaBetaSearch:
                 return float('inf')  # Recompensa máxima: Bomberman llegó a la meta
 
         if is_bomberman_turn:
-            # Penalización por riesgo de bomba
+            # Evaluación para Bomberman
             bomb_penalty = 500 if state.bomb_risk(state.bomberman_position) else 0
             distance_to_goal = state.manhattan_distance(state.bomberman_position, state.goal_position)
             goal_reward = -distance_to_goal * 100
@@ -20,14 +20,12 @@ class AlphaBetaSearch:
             ) else 0
             return goal_reward - bomb_penalty + globe_penalty
         else:
-            if state.globes:
-                distance_to_bomberman = min(
-                    state.manhattan_distance(globe["position"], state.bomberman_position)
-                    for globe in state.globes
-                )
-                return -distance_to_bomberman * 100
-            return 0
-
+            # Evaluación independiente para cada globo
+            total_score = 0
+            for globe in state.globes:
+                distance_to_bomberman = state.manhattan_distance(globe["position"], state.bomberman_position)
+                total_score -= distance_to_bomberman * 50  # Penalizar la distancia a Bomberman
+            return total_score
 
     def alpha_beta(self, state, depth, alpha, beta, maximizing_player):
         if depth == 0 or state.is_terminal():
@@ -46,7 +44,6 @@ class AlphaBetaSearch:
         else:
             min_eval = float('inf')
             for child in state.get_children():
-                #print(f"Procesando movimiento del globo hacia {child.bomberman_position} desde {child.globes}")
                 eval = self.alpha_beta(child, depth - 1, alpha, beta, True)
                 min_eval = min(min_eval, eval)
                 beta = min(beta, eval)

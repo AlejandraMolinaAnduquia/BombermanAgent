@@ -22,34 +22,70 @@ class GlobeAgent(Agent):
         """
         Ejecuta un paso en la simulación para el Globo.
         """
-        from Utils.state import GameState
-        from SearchesArquitecture.InformedSearches.alphabeta import AlphaBetaSearch
         if self.pos is None:
+            print(f"[Error] Globo {self.unique_id} no tiene posición.")
             return
 
         # Manejar riesgo de bomba
         if self.model.state.bomb_risk(self.pos):
             safe_position = self.model.state.find_safe_position(self.pos)
             if safe_position:
+                print(f"[Globo {self.unique_id}] En peligro de bomba. Moviéndose a posición segura: {safe_position}")
                 self.model.grid.move_agent(self, safe_position)
                 return
 
-        # Estrategia de movimiento
-        bomberman = self.get_bomberman_agent()
-        if bomberman and isinstance(self.model.search_strategy, AlphaBetaSearch):
-            game_state = GameState(self.model, is_bomberman_turn=False)
-            best_action = self.model.search_strategy.run(
-                game_state=game_state,
-                depth=3,
-                is_bomberman_turn=False
-            )
-            if isinstance(best_action, tuple):
-                self.model.grid.move_agent(self, best_action)
-            else:
-                print(f"Globo en {self.pos} no pudo encontrar un movimiento.")
+        # Calcular el camino hacia Bomberman
+        path_to_bomberman = self.calculate_path_to_bomberman()
 
+        if path_to_bomberman:
+            # Moverse al siguiente paso en el camino calculado
+            next_step = path_to_bomberman[0]
+            print(f"[Globo {self.unique_id}] Moviéndose hacia Bomberman: {next_step}")
+            self.model.grid.move_agent(self, next_step)
         else:
+            print(f"[Globo {self.unique_id}] No encontró un camino hacia Bomberman. Moviéndose aleatoriamente.")
             self.random_move()
+
+
+    def calculate_path_to_bomberman(self):
+        """
+        Calcula el camino óptimo hacia Bomberman, asegurándose de evitar colisiones con otros globos
+        y siguiendo las heurísticas definidas.
+
+        Returns:
+            list: Lista de posiciones que representan el camino óptimo hacia Bomberman.
+        """
+        from queue import Queue
+
+        if not self.pos or not self.get_bomberman_agent() or not self.get_bomberman_agent().pos:
+            return []  # Si no hay posición o Bomberman, no se calcula un camino
+
+        start_pos = self.pos
+        bomberman_pos = self.get_bomberman_agent().pos
+        visited = set()
+        queue = Queue()
+        queue.put((start_pos, []))  # (posición actual, camino acumulado)
+
+        while not queue.empty():
+            current_pos, path = queue.get()
+
+            if current_pos in visited:
+                continue
+            visited.add(current_pos)
+
+            # Si llegamos a Bomberman, retornamos el camino
+            if current_pos == bomberman_pos:
+                return path + [current_pos]
+
+            # Generar movimientos válidos desde la posición actual
+            for move in self.model.state.generate_moves(current_pos):
+                # Evitar posiciones ocupadas por otros globos
+                occupied_positions = {globe["position"] for globe in self.model.state.globes if globe["agent"] != self}
+                if move in visited or move in occupied_positions:
+                    continue
+                queue.put((move, path + [move]))
+
+        return []  # Si no se encuentra un camino, retorna lista vacía
 
 
     def generate_moves(self, pos):
