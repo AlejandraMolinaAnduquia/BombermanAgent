@@ -77,9 +77,7 @@ class GameState:
                     risk_pos = (bomb_pos[0] + direction[0] * step, bomb_pos[1] + direction[1] * step)
                     if pos == risk_pos:
                         return True
-        return False
-
-
+        return False    
 
     def is_valid_move(self, pos):
         """
@@ -182,6 +180,37 @@ class GameState:
         # Si no se encuentra un camino, retornar None
         return None
 
+    def find_path_to_bomberman(self, start_pos):
+        """
+        Encuentra un camino válido desde un globo hasta Bomberman usando BFS.
+        """
+        from queue import Queue
+
+        if not self.bomberman_position or not start_pos:
+            return []  # No hay camino si Bomberman o la posición inicial faltan
+
+        queue = Queue()
+        queue.put((start_pos, []))  # (posición actual, camino acumulado)
+        visited = set()
+
+        while not queue.empty():
+            current_pos, path = queue.get()
+
+            if current_pos in visited:
+                continue
+            visited.add(current_pos)
+
+            # Si el globo alcanza a Bomberman, retorna el camino
+            if current_pos == self.bomberman_position:
+                return path + [current_pos]
+
+            # Generar movimientos válidos desde la posición actual
+            for move in self.generate_moves(current_pos):
+                if move not in visited:
+                    queue.put((move, path + [move]))
+
+        return []  # Si no se encuentra un camino, retorna lista vacía
+
 
 
     def clone(self):
@@ -196,7 +225,7 @@ class GameState:
         children = []
 
         if self.is_bomberman_turn:
-            # Generar movimientos para Bomberman
+            # Movimientos para Bomberman
             moves = self.generate_moves(self.bomberman_position)
             for move in moves:
                 child_state = self.clone()
@@ -213,23 +242,36 @@ class GameState:
         else:
             # Movimientos para los globos
             for globe in self.globes:
-                moves = self.generate_moves(globe["position"])
-                for move in moves:
+                path_to_bomberman = self.find_path_to_bomberman(globe["position"])
+                if path_to_bomberman:
+                    # Usar el siguiente paso del camino calculado
+                    next_move = path_to_bomberman[0]
                     child_state = self.clone()
                     for child_globe in child_state.globes:
                         if child_globe["agent"] == globe["agent"]:
-                            child_globe["position"] = move
+                            child_globe["position"] = next_move
                             break
-                    child_state.last_action = move
+                    child_state.last_action = next_move
                     children.append(child_state)
+                else:
+                    # Generar movimientos válidos normales si no hay camino directo
+                    valid_moves = self.generate_moves(globe["position"])
+                    for move in valid_moves:
+                        child_state = self.clone()
+                        for child_globe in child_state.globes:
+                            if child_globe["agent"] == globe["agent"]:
+                                child_globe["position"] = move
+                                break
+                        child_state.last_action = move
+                        children.append(child_state)
 
-                # Acción especial: ataque al estar a un paso de Bomberman
+                # Ataque si el globo está a un paso de Bomberman
                 if self.manhattan_distance(globe["position"], self.bomberman_position) == 1:
                     attack_state = self.clone()
                     attack_state.bomberman_position = None  # Bomberman eliminado
                     for child_globe in attack_state.globes:
                         if child_globe["agent"] == globe["agent"]:
-                            child_globe["position"] = self.bomberman_position  # Globo ocupa la posición de Bomberman
+                            child_globe["position"] = self.bomberman_position
                             break
                     attack_state.last_action = "attack"
                     children.append(attack_state)
