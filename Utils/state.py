@@ -101,7 +101,7 @@ class GameState:
 
         # Permitir moverse a celdas que solo contienen caminos, meta o rocas
         return all(
-            isinstance(agent, (BombermanAgent,RoadAgent, GoalAgent, RockAgent)) for agent in agents_in_cell
+            isinstance(agent, (BombermanAgent,RoadAgent, GoalAgent)) for agent in agents_in_cell
         )
 
     def evaluate_position(self, pos, agent_type):
@@ -246,55 +246,46 @@ class GameState:
                 bomb_state.last_action = "place_bomb"
                 children.append(bomb_state)
         else:
-            # Movimientos para cada globo (independiente)
+            # Movimientos para cada globo
             for globe in self.globes:
                 globe_agent = globe["agent"]
                 globe_pos = globe["position"]
-
-                # Historial para evitar bucles
-                history = globe_agent.history if hasattr(globe_agent, 'history') else []
-                if not hasattr(globe_agent, 'history'):
-                    globe_agent.history = history
-
-                # Calcular camino hacia Bomberman
                 path_to_bomberman = self.find_path_to_bomberman(globe_pos)
-                print(f"[Debug] Globo {globe_agent.unique_id} en posición {globe_pos} calcula camino hacia Bomberman: {path_to_bomberman}")
 
-                # Movimiento hacia Bomberman
+                # Moverse hacia Bomberman si hay camino
                 if path_to_bomberman:
                     next_move = path_to_bomberman[0]
-                    if next_move not in history:  # Evitar movimientos repetidos recientes
+
+                    # Evitar colisiones entre globos
+                    occupied_positions = {g["position"] for g in self.globes if g["agent"] != globe_agent}
+                    if next_move not in occupied_positions:
                         child_state = self.clone()
                         for child_globe in child_state.globes:
                             if child_globe["agent"] == globe_agent:
                                 child_globe["position"] = next_move
-                                child_globe["history"] = history[-2:] + [next_move]  # Mantener solo últimos 2 movimientos
                                 break
                         child_state.last_action = next_move
                         children.append(child_state)
                 else:
-                    # Movimientos válidos exploratorios
+                    # Movimiento alternativo o espera
                     valid_moves = self.generate_moves(globe_pos)
-                    print(f"[Debug] Globo {globe_agent.unique_id} en posición {globe_pos} genera movimientos válidos: {valid_moves}")
                     for move in valid_moves:
-                        # Evitar colisiones con otros globos y movimientos recientes
                         occupied_positions = {g["position"] for g in self.globes if g["agent"] != globe_agent}
-                        if move in occupied_positions or move in history:
+                        if move in occupied_positions:
                             continue
-                        
+
                         child_state = self.clone()
                         for child_globe in child_state.globes:
                             if child_globe["agent"] == globe_agent:
                                 child_globe["position"] = move
-                                child_globe["history"] = history[-2:] + [move]
                                 break
                         child_state.last_action = move
                         children.append(child_state)
 
-                # Generar ataque si Bomberman está adyacente
+                # Ataque si Bomberman está adyacente
                 if self.manhattan_distance(globe_pos, self.bomberman_position) == 1:
                     attack_state = self.clone()
-                    attack_state.bomberman_position = None  # Bomberman eliminado
+                    attack_state.bomberman_position = None
                     for child_globe in attack_state.globes:
                         if child_globe["agent"] == globe_agent:
                             child_globe["position"] = self.bomberman_position
@@ -303,6 +294,7 @@ class GameState:
                     children.append(attack_state)
 
         return children
+
 
     def is_terminal(self):
         # Actualizar posiciones antes de evaluar
