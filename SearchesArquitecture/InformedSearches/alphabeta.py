@@ -1,6 +1,7 @@
 class AlphaBetaSearch:
     def __init__(self, max_depth):
         self.max_depth = max_depth
+        self.poda_count = 0  # Contador de podas
 
     def evaluate_state(self, state, is_bomberman_turn):
         if state.is_terminal():
@@ -39,6 +40,8 @@ class AlphaBetaSearch:
                 max_eval = max(max_eval, eval)
                 alpha = max(alpha, eval)
                 if beta <= alpha:
+                    self.poda_count += 1  # Incrementar el contador de podas
+                    print(f"Poda en maximizing_player: alpha={alpha}, beta={beta}, depth={depth}")
                     break
             return max_eval
         else:
@@ -48,20 +51,13 @@ class AlphaBetaSearch:
                 min_eval = min(min_eval, eval)
                 beta = min(beta, eval)
                 if beta <= alpha:
+                    self.poda_count += 1  # Incrementar el contador de podas
+                    print(f"Poda en minimizing_player: alpha={alpha}, beta={beta}, depth={depth}")
                     break
             return min_eval
 
     def run(self, game_state, depth, is_bomberman_turn):
-        """
-        Ejecuta el algoritmo de búsqueda Alfa-Beta. Prioriza la salida sobre cualquier otra acción.
-        """
-        # Priorizar el camino a la salida para Bomberman
-        if is_bomberman_turn:
-            path_to_goal = game_state.find_optimized_path_to_goal()
-            if path_to_goal:
-                print(f"[Alfa-Beta] Bomberman prioriza camino a la salida: {path_to_goal}")
-                return path_to_goal[0]  # Retorna el siguiente paso hacia la salida
-
+        self.poda_count = 0  # Reiniciar el contador antes de ejecutar
         best_action = None
         best_value = float('-inf') if is_bomberman_turn else float('inf')
 
@@ -78,4 +74,5 @@ class AlphaBetaSearch:
                 best_value = value
                 best_action = child.last_action
 
+        print(f"Total de podas realizadas: {self.poda_count}")
         return best_action
