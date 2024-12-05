@@ -1,33 +1,36 @@
 class AlphaBetaSearch:
     def __init__(self, max_depth):
-        """
-        Inicializa la clase para la poda alfa-beta.
-
-        Args:
-            max_depth (int): La profundidad máxima para analizar el árbol de búsqueda.
-        """
         self.max_depth = max_depth
 
     def evaluate_state(self, state, is_bomberman_turn):
-        """
-        Evalúa un estado del juego.
+        if state.is_terminal():
+            if state.bomberman_position is None:
+                return float('-inf')  # Penalización máxima: Bomberman eliminado
+            if state.bomberman_position == state.goal_position:
+                return float('inf')  # Recompensa máxima: Bomberman llegó a la meta
 
-        Args:
-            state (GameState): Estado actual del juego.
-            is_bomberman_turn (bool): True si es el turno de Bomberman, False si es el turno de los globos.
-
-        Returns:
-            float: Valor heurístico del estado.
-        """
-        return state.evaluate(is_bomberman_turn)
+        if is_bomberman_turn:
+            # Evaluación para Bomberman
+            bomb_penalty = 500 if state.bomb_risk(state.bomberman_position) else 0
+            distance_to_goal = state.manhattan_distance(state.bomberman_position, state.goal_position)
+            goal_reward = -distance_to_goal * 100
+            globe_penalty = -300 if any(
+                state.manhattan_distance(state.bomberman_position, globe["position"]) <= 1
+                for globe in state.globes
+            ) else 0
+            return goal_reward - bomb_penalty + globe_penalty
+        else:
+            # Evaluación independiente para cada globo
+            total_score = 0
+            for globe in state.globes:
+                distance_to_bomberman = state.manhattan_distance(globe["position"], state.bomberman_position)
+                total_score -= distance_to_bomberman * 50  # Penalizar la distancia a Bomberman
+            return total_score
 
     def alpha_beta(self, state, depth, alpha, beta, maximizing_player):
-        # Detectar bucles explícitos
-        if state.visited_positions.count(state.bomberman_position) > 2:
-            return float('-inf') if maximizing_player else float('inf')
-
         if depth == 0 or state.is_terminal():
-            return state.evaluate(maximizing_player)
+            print(f"Evaluando estado terminal: Bomberman: {state.bomberman_position}, Globos: {[g['position'] for g in state.globes]}")
+            return self.evaluate_state(state, maximizing_player)
 
         if maximizing_player:
             max_eval = float('-inf')
@@ -48,8 +51,17 @@ class AlphaBetaSearch:
                     break
             return min_eval
 
-
     def run(self, game_state, depth, is_bomberman_turn):
+        """
+        Ejecuta el algoritmo de búsqueda Alfa-Beta. Prioriza la salida sobre cualquier otra acción.
+        """
+        # Priorizar el camino a la salida para Bomberman
+        if is_bomberman_turn:
+            path_to_goal = game_state.find_optimized_path_to_goal()
+            if path_to_goal:
+                print(f"[Alfa-Beta] Bomberman prioriza camino a la salida: {path_to_goal}")
+                return path_to_goal[0]  # Retorna el siguiente paso hacia la salida
+
         best_action = None
         best_value = float('-inf') if is_bomberman_turn else float('inf')
 
@@ -61,21 +73,9 @@ class AlphaBetaSearch:
                 beta=float('inf'),
                 maximizing_player=not is_bomberman_turn
             )
-            # Penalizar movimientos repetidos en la decisión final
-            if child.last_action in game_state.visited_positions:
-                value -= 50  # Penalización adicional
 
-            print(f"Evaluando acción {child.last_action} con valor {value}")  # Depuración
-            if is_bomberman_turn:
-                if value > best_value:
-                    best_value = value
-                    best_action = child.last_action
-            else:
-                if value < best_value:
-                    best_value = value
-                    best_action = child.last_action
+            if (is_bomberman_turn and value > best_value) or (not is_bomberman_turn and value < best_value):
+                best_value = value
+                best_action = child.last_action
 
-        print(f"Mejor acción seleccionada: {best_action} con valor {best_value}")
         return best_action
-
-

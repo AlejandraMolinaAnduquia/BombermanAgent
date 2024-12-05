@@ -33,10 +33,10 @@ class BombermanAgent(Agent):
             model.register_agent(self)  # Solo registra si hay modelo
 
 
-        # Direcciones posibles de movimiento de Bomberman
+        # Direcciones posibles de movimiento de directions = [(-1, 0), (0, 1), (1, 0), (0, -1)] Bomberman Prioridad: Izquierda, Arriba, Derecha, Abajo
         self.directions = {
-            'UP': (0, -1),
-            'DOWN': (0, 1),
+            'UP': (0, 1),
+            'DOWN': (0, -1),
             'LEFT': (-1, 0),
             'RIGHT': (1, 0),
         }
@@ -210,6 +210,15 @@ class BombermanAgent(Agent):
         if self.pos is None:
             return
 
+        # Manejar riesgo de bomba
+        if isinstance(self.search_strategy, AlphaBetaSearch) and self.model.state.bomb_risk(self.pos):
+            safe_position = self.model.state.find_safe_position(self.pos)
+            if safe_position:
+                self.move_to_position(safe_position)
+                return
+        if self.pos is None:
+            return
+
         # Si no se ha inicializado la búsqueda, configurarla
         if not self.is_search_initialized:
             start_position = (self.pos[0], self.pos[1])
@@ -249,8 +258,4 @@ class BombermanAgent(Agent):
 
         # Moverse hacia la salida o ejecutar una estrategia defensiva
         self.move_to_exit_or_safety()
-        print(f"Posición actual de Bomberman en este paso: {self.pos}")
-
-
-
-
+        print(f"Posición actual de Bomberman en este paso: {self.pos}") 

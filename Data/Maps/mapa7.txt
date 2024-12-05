@@ -1,4 +1,4 @@
-C_b,C,C,M,C,C,C
+C_b,C,C,M,C,C,R
 C,M,C,C,C,M,C
 C,C,M,M,C,M,R_s
 C,M,C,C,C,M,C

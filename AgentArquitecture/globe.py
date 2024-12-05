@@ -1,5 +1,6 @@
 
 from AgentArquitecture.road import RoadAgent
+from SearchesArquitecture.InformedSearches.alphabeta import AlphaBetaSearch
 from mesa import Agent
 import random
 
@@ -13,41 +14,122 @@ class GlobeAgent(Agent):
             model: El modelo de simulación al que pertenece el agente.
         """
         super().__init__(unique_id, model)
-        self.awaiting_step_confirmation = False  # Marca si el agente está esperando confirmación de movimiento
-        self.previous_visit_order = None  # Almacena el número de orden si está sobre una casilla numerada
-        self.visit_order = None  # Número de orden asignado a las casillas en camino óptimo
-        self.is_visited = False  # Indica si la casilla ha sido visitada
+        self.level = 1  # Nivel predeterminado, puede ser sobrescrito por el modelo
+        self.awaiting_step_confirmation = False
+        self.previous_visit_order = None
+        self.visit_order = None
+        self.is_visited = False
+
 
     def step(self):
         """
-        Ejecuta un paso en simulación para el globo, usando diferentes estrategias según el nivel.
+        Ejecuta un paso en la simulación para el Globo. Si el nivel es 0, se mueve aleatoriamente.
         """
-        from Utils.state import GameState
-        from SearchesArquitecture.InformedSearches.alphabeta import AlphaBetaSearch
-        if self.pos is None:
+        if self.level == 0:
+            # Moverse aleatoriamente en todas las direcciones posibles
+            self.random_move()
             return
 
-        bomberman = self.get_bomberman_agent()
-        if bomberman is None or bomberman.pos is None:
+        # Comportamiento para otros niveles (ya implementado)
+        if self.pos is None:
+            print(f"[Error] Globo {self.unique_id} no tiene posición.")
             return
 
         if isinstance(self.model.search_strategy, AlphaBetaSearch):
-            level = self.model.level  # Nivel de dificultad del globo
-            depth = 1 if level == 0 else (3 if level == 1 else 6)  # Fácil, Medio, Difícil
+            if self.model.state.bomb_risk(self.pos):
+                safe_position = self.model.state.find_safe_position(self.pos)
+                if safe_position:
+                    print(f"[Globo {self.unique_id}] En peligro de bomba. Moviéndose a posición segura: {safe_position}")
+                    self.model.grid.move_agent(self, safe_position)
+                    return
 
-            game_state = GameState(self.model, is_bomberman_turn=False)
-            best_action = self.model.search_strategy.run(
-                game_state=game_state,
-                depth=depth,
-                is_bomberman_turn=False
-            )
-
-            if isinstance(best_action, tuple):
-                self.model.grid.move_agent(self, best_action)
+            path_to_bomberman = self.calculate_path_to_bomberman()
+            if path_to_bomberman:
+                next_step = path_to_bomberman[0]
+                if self.should_wait_or_alternate(next_step):
+                    self.random_move()
+                else:
+                    print(f"[Globo {self.unique_id}] Moviéndose hacia Bomberman: {next_step}")
+                    self.model.grid.move_agent(self, next_step)
+                    if self.check_collision(self.get_bomberman_agent().pos):
+                        self.handle_collision(self.get_bomberman_agent())
             else:
-                print(f"Globo en {self.pos} no pudo encontrar un movimiento.")
+                print(f"[Globo {self.unique_id}] No encontró un camino hacia Bomberman. Moviéndose aleatoriamente.")
+                self.random_move()
         else:
-            self.random_move()  # Nivel fácil usa movimiento aleatorio
+            print(f"[Globo {self.unique_id}] No encontró un camino hacia Bomberman. Moviéndose aleatoriamente.")
+            self.random_move()
+
+
+    def should_wait_or_alternate(self, next_pos):
+        """
+        Verifica si el globo debe esperar o buscar un camino alternativo debido a otros globos.
+
+        Args:
+            next_pos (tuple): La posición a la que el globo quiere moverse.
+
+        Returns:
+            bool: True si debe esperar, False si puede proceder.
+        """
+        # Obtener las posiciones de los otros globos
+        other_globe_positions = {globe["position"] for globe in self.model.state.globes if globe["agent"] != self}
+
+        # Verificar si la posición siguiente está ocupada por otro globo
+        if next_pos in other_globe_positions:
+            print(f"[Globo {self.unique_id}] Esperando o alternando camino debido a bloqueo en {next_pos}.")
+            return True
+        return False
+
+    def calculate_path_to_bomberman(self):
+        """
+        Calcula el camino óptimo hacia Bomberman, asegurándose de evitar colisiones con otros globos
+        y siguiendo las heurísticas definidas.
+
+        Returns:
+            list: Lista de posiciones que representan el camino óptimo hacia Bomberman.
+        """
+        from queue import Queue
+
+        if not self.pos or not self.get_bomberman_agent() or not self.get_bomberman_agent().pos:
+            return []  # Si no hay posición o Bomberman, no se calcula un camino
+
+        start_pos = self.pos
+        bomberman_pos = self.get_bomberman_agent().pos
+        visited = set()
+        queue = Queue()
+        queue.put((start_pos, []))  # (posición actual, camino acumulado)
+
+        while not queue.empty():
+            current_pos, path = queue.get()
+
+            if current_pos in visited:
+                continue
+            visited.add(current_pos)
+
+            # Si llegamos a Bomberman, retornamos el camino
+            if current_pos == bomberman_pos:
+                return path + [current_pos]
+
+            # Generar movimientos válidos desde la posición actual
+            for move in self.model.state.generate_moves(current_pos):
+                # Evitar posiciones ocupadas por otros globos
+                occupied_positions = {globe["position"] for globe in self.model.state.globes if globe["agent"] != self}
+                if move in visited or move in occupied_positions:
+                    continue
+                queue.put((move, path + [move]))
+
+        return []  # Si no se encuentra un camino, retorna lista vacía
+
+
+    def generate_moves(self, pos):
+        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Prioridad de movimiento
+        valid_moves = []
+        for dx, dy in directions:
+            new_pos = (pos[0] + dx, pos[1] + dy)
+            if self.is_valid_move(new_pos):
+                valid_moves.append(new_pos)
+        return valid_moves
+
 
     def random_move(self):
         """
@@ -70,7 +152,7 @@ class GlobeAgent(Agent):
 
         if bomberman.is_moving:
             # Define las direcciones posibles y las mezcla para elegir una aleatoria
-            possible_directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+            possible_directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Prioridad de movimiento
             random.shuffle(possible_directions)
 
             moved = False  # Controla si el globo logra moverse
