@@ -118,11 +118,16 @@ class GameState:
         if agent_type == "Bomberman":
             distance_to_goal = self.manhattan_distance(pos, self.goal_position)
             risk = self.bomb_risk(pos)
-            return -distance_to_goal - (100 if risk else 0)
+            globe_proximity_penalty = sum(
+                100 / (1 + self.manhattan_distance(pos, globe["position"]))
+                for globe in self.globes
+            )
+            return -distance_to_goal - (100 if risk else 0) - globe_proximity_penalty
         elif agent_type == "Globe":
             distance_to_bomberman = self.manhattan_distance(pos, self.bomberman_position)
             risk = self.bomb_risk(pos)
             return distance_to_bomberman - (100 if risk else 0)
+
 
     def manhattan_distance(self, pos1, pos2):
         """Calcula la distancia de Manhattan entre dos posiciones."""
@@ -146,21 +151,16 @@ class GameState:
                     valid_moves.append(new_pos)
         return valid_moves
 
-
-
-
     def find_optimized_path_to_goal(self):
         """
-        Encuentra el camino más corto hacia la salida (R_s) usando BFS.
-        Retorna una lista de posiciones que representan el camino desde la posición
-        actual de Bomberman hasta la salida. Si no hay un camino válido, retorna None.
+        Encuentra el camino más corto hacia la salida usando BFS.
         """
         from queue import Queue
 
         if not self.bomberman_position or not self.goal_position:
-            return None  # Si no hay posición inicial o meta, no hay camino
+            print("[Bomberman] No se puede calcular un camino: posición inicial o meta no válidas.")
+            return []  # Retorna un camino vacío si no hay posición inicial o meta.
 
-        # Inicialización de la búsqueda BFS
         queue = Queue()
         queue.put((self.bomberman_position, []))  # (posición actual, camino hasta ahora)
         visited = set()
@@ -168,22 +168,20 @@ class GameState:
         while not queue.empty():
             current_pos, path = queue.get()
 
-            # Si ya visitamos esta posición, omitimos
             if current_pos in visited:
                 continue
             visited.add(current_pos)
 
-            # Si llegamos a la meta, devolvemos el camino
             if current_pos == self.goal_position:
+                print(f"[Bomberman] Camino encontrado hacia la meta: {path + [current_pos]}")
                 return path + [current_pos]
 
-            # Generar movimientos válidos desde la posición actual
             for move in self.generate_moves(current_pos):
                 if move not in visited:
-                    queue.put((move, path + [current_pos]))
+                    queue.put((move, path + [move]))
 
-        # Si no se encuentra un camino, retornar None
-        return None
+        print("[Bomberman] No se encontró un camino hacia la meta.")
+        return []  # Si no hay camino, retorna lista vacía.
 
     def find_path_to_bomberman(self, start_pos):
         """
@@ -231,20 +229,32 @@ class GameState:
         children = []
 
         if self.is_bomberman_turn:
-            # Movimientos para Bomberman
-            moves = self.generate_moves(self.bomberman_position)
-            for move in moves:
-                child_state = self.clone()
-                child_state.bomberman_position = move
-                child_state.last_action = move
-                children.append(child_state)
+            # Calcula el camino óptimo hacia la meta
+            path_to_goal = self.find_optimized_path_to_goal()
 
-            # Generar acción de colocar bomba
+            if path_to_goal:
+                next_position = path_to_goal[0]
+                if next_position != self.bomberman_position:
+                    print(f"[Bomberman] Moviéndose hacia la posición: {next_position}")
+                    child_state = self.clone()
+                    child_state.bomberman_position = next_position
+                    child_state.last_action = next_position
+                    children.append(child_state)
+
+            # Colocar bomba si es necesario para defenderse
             if self.can_place_bomb() and self.is_bomb_useful():
+                print("[Bomberman] Colocando bomba para defenderse.")
                 bomb_state = self.clone()
                 bomb_state.add_bomb(self.bomberman_position)
                 bomb_state.last_action = "place_bomb"
                 children.append(bomb_state)
+
+            # Si no hay movimientos válidos, espera en su lugar
+            if not children:
+                print("[Bomberman] No hay movimientos válidos, esperando en su posición actual.")
+                wait_state = self.clone()
+                wait_state.last_action = "wait"
+                children.append(wait_state)
         else:
             # Movimientos para cada globo
             for globe in self.globes:
@@ -252,11 +262,8 @@ class GameState:
                 globe_pos = globe["position"]
                 path_to_bomberman = self.find_path_to_bomberman(globe_pos)
 
-                # Moverse hacia Bomberman si hay camino
                 if path_to_bomberman:
                     next_move = path_to_bomberman[0]
-
-                    # Evitar colisiones entre globos
                     occupied_positions = {g["position"] for g in self.globes if g["agent"] != globe_agent}
                     if next_move not in occupied_positions:
                         child_state = self.clone()
@@ -267,7 +274,6 @@ class GameState:
                         child_state.last_action = next_move
                         children.append(child_state)
                 else:
-                    # Movimiento alternativo o espera
                     valid_moves = self.generate_moves(globe_pos)
                     for move in valid_moves:
                         occupied_positions = {g["position"] for g in self.globes if g["agent"] != globe_agent}
@@ -282,7 +288,6 @@ class GameState:
                         child_state.last_action = move
                         children.append(child_state)
 
-                # Ataque si Bomberman está adyacente
                 if self.manhattan_distance(globe_pos, self.bomberman_position) == 1:
                     attack_state = self.clone()
                     attack_state.bomberman_position = None
@@ -294,6 +299,7 @@ class GameState:
                     children.append(attack_state)
 
         return children
+
 
 
     def is_terminal(self):
@@ -309,27 +315,20 @@ class GameState:
             self.model.running = False  # Detener la simulación
             return True  # Estado terminal
 
-        # Verificar si algún globo puede atacar a Bomberman
-        if not self.is_bomberman_turn:  # Solo evaluar ataque de globos en su turno
-            for globe in self.globes:
-                if self.manhattan_distance(globe["position"], self.bomberman_position) == 1:
-                    print(f"[Actualización] Globo {globe['agent'].unique_id} elimina a Bomberman.")
-                    self.remove_bomberman_and_update_model()
-                    return True
-
         # Verificar si Bomberman llegó a la meta
         if self.bomberman_position == self.goal_position:
             print("[Fin de Juego] Bomberman alcanzó la meta.")
             self.model.running = False  # Detener la simulación
             return True
 
-        # Verificar si Bomberman no puede moverse ni colocar bombas
-        if not self.generate_moves(self.bomberman_position) and not self.can_place_bomb():
-            print("[Fin de Juego] Bomberman no tiene movimientos válidos ni puede colocar bombas.")
-            self.model.running = False  # Detener la simulación
-            return True
-
+        # # Verificar si Bomberman no puede moverse ni colocar bombas
+        # if not self.generate_moves(self.bomberman_position) and not self.can_place_bomb():
+        #     print("[Fin de Juego] Bomberman no tiene movimientos válidos ni puede colocar bombas.")
+        #     self.model.running = False  # Detener la simulación
+        #     return True
+        
         return False
+
 
     def sync_with_interface(self):
         """
@@ -394,11 +393,17 @@ class GameState:
     def can_place_bomb(self):
         """
         Verifica si Bomberman puede colocar una bomba.
-        Returns True si no hay bombas activas, False en caso contrario.
         """
-        return not any(
-            bomb["position"] == self.bomberman_position for bomb in self.bombs
+        # Verificar si no hay bombas activas en su posición
+        if any(bomb["position"] == self.bomberman_position for bomb in self.bombs):
+            return False
+
+        # Colocar bomba solo si hay globos cercanos
+        return any(
+            self.manhattan_distance(self.bomberman_position, globe["position"]) <= 2
+            for globe in self.globes
         )
+
 
 
 
