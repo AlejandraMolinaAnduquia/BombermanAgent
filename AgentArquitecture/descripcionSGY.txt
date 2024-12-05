@@ -5,4 +5,4 @@ que se podan.
 En la linea 93 y 119 se incrementa este contador en 1 si beta en menor igual a alfa (se poda) tanto en la parte de maximizacion 
 como de minimizacion.
 para modificar la profundidad de bomberman se modifica la funcion step del archivo bomberman.py en la linea 231
-En 5 niveles, dependiendo del mapa y del movimiento de los globos, el algoritmo poda alfa beta poda entre 4 y 8 nodos
+En 5 niveles, dependiendo del mapa y del movimiento de los globos, el algoritmo poda alfa beta poda entre 4 y 8 nodos.
