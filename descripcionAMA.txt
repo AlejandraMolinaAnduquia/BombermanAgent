@@ -1,0 +1,18 @@
+Proceso para identificar cantidad de nodos podados:
+
+1. En la función init() de la clase AlphaBetaSearch se inicializa un contador con el valor de cero
+2. Luego pasamos al def def alpha_beta(self, state, depth, alpha, beta, maximizing_player), ahi analizamos e identificamos en donde debemos de poner el contador
+3. Identificamos cuando se cumple la sentencia de poda, y es cuando se cumple que "beta <= alpha"
+4. Colocamos el contador para ambos personajes en las sentencias indicada en el punto 3, tanto para bomberman como para el globo, es decir, cuando es el turno del personaje maximizador y el turno para el personaje minimizador
+5. Probamos el conteo de podas realizadas, en un primer intent fue=1, en el segundo intento fue=8 y el tercero fue = 2
+
+
+Lineas de cambios especificos:
+- En server.py se aumentó el nivel de profundidad a 5: 121
+- En bomberman.py cambiamos la rpofundidad de este personaje: 231
+- En archivo alphabeta.py:
+--init(), inicializacion de la variable: 4
+--funcion alpha_beta(): 43 y 54
+--imprimir el numero de nodos podados: 77
+
+Nota: Se calculan el total de podas para ambos personajes

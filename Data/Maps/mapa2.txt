@@ -1,7 +1,7 @@
 R,C,C,M,C,C,R,C,C,M
 C_b,M,C,C,C,M,C,C,M,C
 C,C,C,R,C,C,C,R,C,C
-C,M,C,C,C,M,R,C,C,M
+C,M,C,C,C,M,C,C,C,M
 M,C,C,M,C_g,C,R,C,R,C
 C,M,C,C,C,M,C,M,C,C
 R,C,C,R,C,C,C,C,C,R

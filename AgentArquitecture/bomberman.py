@@ -228,7 +228,7 @@ class BombermanAgent(Agent):
                 game_state = GameState(self.model, is_bomberman_turn=True)
                 best_action = self.search_strategy.run(
                     game_state=game_state,
-                    depth=3,
+                    depth=5,
                     is_bomberman_turn=True
                 )
 

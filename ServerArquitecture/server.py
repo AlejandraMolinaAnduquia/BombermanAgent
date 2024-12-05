@@ -118,7 +118,7 @@ def create_server(map):
             choices=["Manhattan", "Euclidean"],
         ),
         "beta": Slider("Beta", value=2, min_value=1, max_value=2),
-        "level": Slider("Nivel de los Globos", value=0, min_value=0, max_value=2, step=1),  # Agregar control de nivel
+        "level": Slider("Nivel de los Globos", value=0, min_value=0, max_value=5, step=1),  
     }
 
     # Crear el servidor
