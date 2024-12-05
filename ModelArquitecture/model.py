@@ -34,7 +34,7 @@ class MazeModel(Model):
         reset_game: Reinicia el juego en su configuración inicial.
     """
     
-    def __init__(self, width, height, map, search_strategy, distance_metric="Manhattan", beta: int = None, level: int = 2):
+    def __init__(self, width, height, map, search_strategy, distance_metric="Manhattan", beta: int = None, level: int = 0):
         super().__init__()
         self.grid = MultiGrid(width, height, True)  # Configura la cuadrícula del laberinto.
         self.schedule = RandomActivation(self)      # Inicializa el programador de activación aleatoria.
@@ -58,7 +58,7 @@ class MazeModel(Model):
         elif search_strategy == "Hill Climbing":
             self.search_strategy = HillClimbing(heuristic=distance_metric)
         elif search_strategy == "Alpha-Beta":
-            self.search_strategy = AlphaBetaSearch(3)
+            self.search_strategy = AlphaBetaSearch(3) # Profundidad máxima de 3 para el árbol de búsqueda
         elif search_strategy in ["Alpha-Beta", "A*"]:  # Solo los algoritmos que requieren un estado del juego
             self.state = GameState(self)  # Inicializa el estado del juego
         else:
@@ -94,6 +94,7 @@ class MazeModel(Model):
                     self.goal_position = (x, y)
                 elif cell == "C_g":
                     globe = AgentIdentity.create_agent("globe", (x, y), self)
+                    globe.level = self.level  # Pasar el nivel al globo
                     self.grid.place_agent(globe, (x, y))
                     self.schedule.add(globe)
 

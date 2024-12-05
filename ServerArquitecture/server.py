@@ -98,11 +98,11 @@ def create_server(map):
         ModularServer: El servidor configurado para la simulación.
     """
     # Dimensiones del mapa
-
     height = len(map)
     width = len(map[0])
     grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 
+    # Parámetros configurables desde la interfaz
     params = {
         "height": height,
         "width": width,
@@ -118,11 +118,10 @@ def create_server(map):
             choices=["Manhattan", "Euclidean"],
         ),
         "beta": Slider("Beta", value=2, min_value=1, max_value=2),
+        "level": Slider("Nivel de los Globos", value=0, min_value=0, max_value=2, step=1),  # Agregar control de nivel
     }
 
-
-    
-    # Crea el servidor de la simulación con el modelo, grilla y parámetros
+    # Crear el servidor
     server = ModularServer(MazeModel, [grid], "Bomberman", params)
     server.port = 8521
     return server
