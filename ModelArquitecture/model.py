@@ -58,7 +58,7 @@ class MazeModel(Model):
         elif search_strategy == "Hill Climbing":
             self.search_strategy = HillClimbing(heuristic=distance_metric)
         elif search_strategy == "Alpha-Beta":
-            self.search_strategy = AlphaBetaSearch(3) # Profundidad máxima de 3 para el árbol de búsqueda
+            self.search_strategy = AlphaBetaSearch(5) # Profundidad máxima de 3 para el árbol de búsqueda
         elif search_strategy in ["Alpha-Beta", "A*"]:  # Solo los algoritmos que requieren un estado del juego
             self.state = GameState(self)  # Inicializa el estado del juego
         else:
